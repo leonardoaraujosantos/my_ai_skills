@@ -26,6 +26,7 @@ ln -s /path/to/my_ai_skills/youtube-playlist ~/.claude/skills/youtube-playlist
 | [convert-to-md](#convert-to-md) | Convert PDF/PPTX to Markdown | `pymupdf`, `python-pptx` |
 | [gws](#gws) | Google Workspace CLI integration | `gws` (npm) |
 | [obsidian](#obsidian) | Obsidian vault management | Obsidian CLI |
+| [sync-skills](#sync-skills) | Sync skills to GitHub repo | None |
 | [youtube-playlist](#youtube-playlist) | YouTube playlist & CC extraction | `yt-dlp`, `youtube-transcript-api` |
 
 ---
@@ -162,6 +163,39 @@ obsidian/
 
 ---
 
+## sync-skills
+
+Automatically sync skills from `~/.claude/skills/` to this GitHub repository.
+
+### Usage
+
+```bash
+# Sync all skills
+/sync-skills
+
+# Sync specific skill
+/sync-skills --skill youtube-playlist
+
+# Custom commit message
+/sync-skills --message "Add new feature"
+
+# Preview changes (dry run)
+/sync-skills --dry-run
+
+# List available skills
+/sync-skills --list
+```
+
+### Files
+
+```
+sync-skills/
+├── SKILL.md
+└── sync_skills.py
+```
+
+---
+
 ## youtube-playlist
 
 Extract video URLs from YouTube playlists, video metadata, and closed captions (CC) from individual videos.
@@ -285,17 +319,25 @@ Show common use cases.
 
 ## Updating Skills
 
-After modifying skills locally, sync them back to this repository:
+After modifying skills locally, sync them back to this repository using the `sync-skills` skill:
 
 ```bash
-# Copy from Claude skills to repo
-cp -r ~/.claude/skills/* /path/to/my_ai_skills/
+# Recommended: Use the sync-skills skill
+/sync-skills
 
-# Commit and push
+# Or sync a specific skill
+/sync-skills --skill youtube-playlist --message "Fix bug in CC extraction"
+
+# Preview changes first
+/sync-skills --dry-run
+```
+
+### Manual Sync (Alternative)
+
+```bash
+cp -r ~/.claude/skills/* /path/to/my_ai_skills/
 cd /path/to/my_ai_skills
-git add .
-git commit -m "Update skills"
-git push
+git add . && git commit -m "Update skills" && git push
 ```
 
 ---
