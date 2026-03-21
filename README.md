@@ -678,6 +678,133 @@ git add . && git commit -m "Update skills" && git push
 
 ---
 
+## CLAUDE.md Configuration
+
+Claude Code uses `CLAUDE.md` files to define rules, preferences, and project-specific instructions. These files are automatically read at the start of each session.
+
+### File Locations
+
+| Location | Scope | Purpose |
+|----------|-------|---------|
+| `~/.claude/CLAUDE.md` | **Global** | Rules that apply to ALL projects |
+| `<project>/CLAUDE.md` | **Project** | Rules specific to one project |
+| `<project>/<folder>/CLAUDE.md` | **Folder** | Rules for a specific folder |
+
+Files are merged, with more specific locations taking precedence.
+
+### Example: Global CLAUDE.md
+
+Create `~/.claude/CLAUDE.md` for rules that apply everywhere:
+
+```markdown
+# Global Rules
+
+## Git Commits
+- Do NOT include "Co-Authored-By: Claude" or any AI mentions in commits
+- Write commit messages as if written by the developer
+- Keep messages concise and technical
+
+## Code Style
+- Follow existing project conventions
+- Add comments only when logic is not self-evident
+- Prefer simple solutions over clever ones
+
+## Communication
+- Be concise and direct
+- Avoid unnecessary filler words
+```
+
+### Example: Project CLAUDE.md
+
+Create `<project>/CLAUDE.md` for project-specific rules:
+
+```markdown
+# Project Rules
+
+## Stack
+- Python 3.11+
+- FastAPI for APIs
+- PostgreSQL database
+
+## Conventions
+- Use snake_case for Python files and functions
+- Use PascalCase for classes
+- All API endpoints must have docstrings
+
+## Testing
+- Run `pytest` before committing
+- Maintain >80% code coverage
+
+## Do NOT
+- Modify files in /config/production/
+- Commit .env files
+- Use print() for logging (use logger instead)
+```
+
+### Common Use Cases
+
+#### Prevent AI Mentions in Commits
+```markdown
+## Git
+- Never include "Claude", "AI", "Co-Authored-By" in commit messages
+- Write commits from developer's perspective
+```
+
+#### Enforce Code Standards
+```markdown
+## Code Standards
+- Use type hints for all function parameters
+- Maximum line length: 100 characters
+- All functions must have docstrings
+```
+
+#### Project-Specific Commands
+```markdown
+## Commands
+- Build: `npm run build`
+- Test: `npm test`
+- Lint: `npm run lint`
+- Deploy: `./scripts/deploy.sh`
+```
+
+#### Protect Sensitive Files
+```markdown
+## Do NOT Modify
+- .env, .env.* files
+- config/secrets.json
+- Any file in /production/
+```
+
+#### Define Preferred Libraries
+```markdown
+## Libraries
+- HTTP requests: use `httpx` (not requests)
+- Date handling: use `pendulum` (not datetime)
+- Testing: use `pytest` (not unittest)
+```
+
+### Tips
+
+1. **Keep it concise** - Claude reads this every session, so shorter is better
+2. **Be specific** - "Use snake_case" is better than "follow Python conventions"
+3. **Use headers** - Organize rules into clear sections
+4. **Update regularly** - Add new rules as patterns emerge
+5. **Use negative rules** - "Do NOT..." is often clearer than positive rules
+
+### Viewing Active Rules
+
+To see what CLAUDE.md files are active in your current session:
+
+```bash
+# Global rules
+cat ~/.claude/CLAUDE.md
+
+# Project rules (if any)
+cat ./CLAUDE.md
+```
+
+---
+
 ## License
 
 MIT License - Feel free to use, modify, and distribute these skills.
