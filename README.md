@@ -805,6 +805,297 @@ cat ./CLAUDE.md
 
 ---
 
+## Hooks
+
+Hooks are shell commands or scripts that execute automatically in response to Claude Code events. They enable automation, validation, and custom workflows.
+
+### Available Hook Events
+
+| Event | When It Fires |
+|-------|---------------|
+| `PreToolUse` | Before a tool executes (can block it) |
+| `PostToolUse` | After a tool succeeds |
+| `SessionStart` | When a session begins or resumes |
+| `SessionEnd` | When a session terminates |
+| `Notification` | When Claude needs attention |
+| `PermissionRequest` | When a permission dialog appears |
+| `Stop` | When Claude finishes responding |
+| `PreCompact` | Before context compaction |
+| `PostCompact` | After context compaction |
+| `TaskCompleted` | When a task is marked complete |
+
+### Hook Configuration
+
+Hooks are configured in `settings.json`:
+
+| Location | Scope |
+|----------|-------|
+| `~/.claude/settings.json` | Global (all projects) |
+| `.claude/settings.json` | Project (can be committed) |
+| `.claude/settings.local.json` | Project (gitignored) |
+
+### Basic Hook Structure
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/validate.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Hook Types
+
+| Type | Description |
+|------|-------------|
+| `command` | Execute a shell script |
+| `http` | POST to an HTTP endpoint |
+| `prompt` | Single-turn Claude evaluation |
+| `agent` | Multi-turn subagent verification |
+
+### Exit Codes
+
+| Code | Behavior |
+|------|----------|
+| `0` | Success - action proceeds |
+| `2` | Block - action is prevented |
+| Other | Warning - action proceeds |
+
+### Example: Block Dangerous Commands
+
+Create `.claude/hooks/block-destructive.sh`:
+
+```bash
+#!/bin/bash
+COMMAND=$(cat | jq -r '.tool_input.command')
+
+if echo "$COMMAND" | grep -qE 'rm -rf|drop table|truncate'; then
+  echo "Destructive command blocked" >&2
+  exit 2
+fi
+
+exit 0
+```
+
+Configure in `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/block-destructive.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Example: Auto-Format After Edits
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | xargs prettier --write 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Example: Desktop Notifications (macOS)
+
+```json
+{
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "osascript -e 'display notification \"Claude needs attention\" with title \"Claude Code\"'"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Example: Run Tests Before Task Completion
+
+```json
+{
+  "hooks": {
+    "TaskCompleted": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npm test || exit 2"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Matcher Patterns
+
+Matchers use regex to filter when hooks fire:
+
+| Event | Matches Against | Examples |
+|-------|-----------------|----------|
+| Tool events | Tool name | `Bash`, `Edit\|Write`, `mcp__.*` |
+| SessionStart | Session source | `startup`, `resume`, `compact` |
+| Notification | Notification type | `permission_prompt` |
+
+### Environment Variables
+
+Available in hook scripts:
+
+| Variable | Description |
+|----------|-------------|
+| `$CLAUDE_PROJECT_DIR` | Project root directory |
+| `$CLAUDE_PLUGIN_ROOT` | Plugin directory (if applicable) |
+
+### Managing Hooks
+
+```bash
+# View all configured hooks
+/hooks
+
+# Disable all hooks
+# Add to settings.json:
+{
+  "disableAllHooks": true
+}
+```
+
+---
+
+## Slash Commands
+
+Claude Code provides built-in slash commands for common operations.
+
+### Essential Commands
+
+| Command | Description |
+|---------|-------------|
+| `/help` | Show help and available commands |
+| `/clear` | Clear conversation history (aliases: `/reset`, `/new`) |
+| `/compact` | Compact conversation to free context |
+| `/exit` | Exit Claude Code (alias: `/quit`) |
+
+### Context & Usage
+
+| Command | Description |
+|---------|-------------|
+| `/context` | Visualize current context usage |
+| `/cost` | Show token usage statistics |
+| `/usage` | Show plan usage limits |
+| `/stats` | Visualize usage and session history |
+
+### Configuration
+
+| Command | Description |
+|---------|-------------|
+| `/config` | Open settings interface (alias: `/settings`) |
+| `/model [name]` | Select or change AI model |
+| `/permissions` | View/update tool permissions |
+| `/hooks` | View hook configurations |
+| `/memory` | Edit CLAUDE.md memory files |
+| `/theme` | Change color theme |
+
+### Session Management
+
+| Command | Description |
+|---------|-------------|
+| `/resume [session]` | Resume previous conversation (alias: `/continue`) |
+| `/export [filename]` | Export conversation as text |
+| `/copy [N]` | Copy last response to clipboard |
+| `/rename [name]` | Rename current session |
+| `/branch [name]` | Create conversation branch (alias: `/fork`) |
+| `/rewind` | Rewind to previous state (alias: `/checkpoint`) |
+
+### Development
+
+| Command | Description |
+|---------|-------------|
+| `/diff` | Open interactive diff viewer |
+| `/pr-comments [PR]` | Fetch GitHub PR comments |
+| `/security-review` | Analyze changes for vulnerabilities |
+| `/plan` | Enter plan mode |
+| `/tasks` | List background tasks |
+
+### Tools & Integrations
+
+| Command | Description |
+|---------|-------------|
+| `/mcp` | Manage MCP server connections |
+| `/ide` | Manage IDE integrations |
+| `/skills` | List available skills |
+| `/plugin` | Manage Claude Code plugins |
+| `/doctor` | Diagnose installation issues |
+
+### Modes
+
+| Command | Description |
+|---------|-------------|
+| `/vim` | Toggle Vim editing mode |
+| `/voice` | Toggle voice dictation |
+| `/fast [on\|off]` | Toggle fast mode |
+| `/sandbox` | Toggle sandbox mode |
+| `/effort [level]` | Set effort level (low/medium/high/max/auto) |
+
+### Other
+
+| Command | Description |
+|---------|-------------|
+| `/feedback` | Submit feedback (alias: `/bug`) |
+| `/login` | Sign in to Anthropic account |
+| `/logout` | Sign out |
+| `/upgrade` | Open upgrade page |
+| `/desktop` | Continue in Claude Code Desktop |
+| `/btw <question>` | Ask side question without adding to history |
+| `/add-dir <path>` | Add new working directory |
+
+### Tips
+
+1. Type `/` to see all available commands
+2. Commands are context-aware (some only appear when relevant)
+3. MCP prompts appear as `/mcp__<server>__<prompt>`
+4. Skills appear as `/<skill-name>` commands
+
+---
+
 ## License
 
 MIT License - Feel free to use, modify, and distribute these skills.
