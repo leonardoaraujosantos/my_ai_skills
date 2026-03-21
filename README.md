@@ -1,6 +1,6 @@
 # My AI Skills
 
-A collection of Claude Code skills for automating common tasks. These skills extend Claude Code's capabilities with specialized tools for document conversion, Google Workspace integration, Obsidian note management, and YouTube content extraction.
+A collection of Claude Code skills for automating common tasks. These skills extend Claude Code's capabilities with specialized tools for document conversion, data manipulation, media processing, and productivity.
 
 ## Installation
 
@@ -23,11 +23,61 @@ ln -s /path/to/my_ai_skills/youtube-playlist ~/.claude/skills/youtube-playlist
 
 | Skill | Description | Dependencies |
 |-------|-------------|--------------|
+| [bookmarks](#bookmarks) | Save URLs to Obsidian vault | `requests`, `beautifulsoup4` |
 | [convert-to-md](#convert-to-md) | Convert PDF/PPTX to Markdown | `pymupdf`, `python-pptx` |
+| [csv-tools](#csv-tools) | CSV manipulation & conversion | None |
 | [gws](#gws) | Google Workspace CLI integration | `gws` (npm) |
+| [image-tools](#image-tools) | Image manipulation | `Pillow` |
+| [journal](#journal) | Daily journaling to Obsidian | None |
+| [json-tools](#json-tools) | JSON manipulation & queries | None (optional: `pyyaml`) |
 | [obsidian](#obsidian) | Obsidian vault management | Obsidian CLI |
+| [pdf-tools](#pdf-tools) | PDF manipulation | `pypdf` |
 | [sync-skills](#sync-skills) | Sync skills to GitHub repo | None |
 | [youtube-playlist](#youtube-playlist) | YouTube playlist & CC extraction | `yt-dlp`, `youtube-transcript-api` |
+
+---
+
+## bookmarks
+
+Save and manage bookmarks in Obsidian vault with auto-fetched metadata.
+
+### Installation
+
+```bash
+pip install requests beautifulsoup4
+```
+
+### Usage
+
+```bash
+SKILL="$HOME/.claude/skills/bookmarks"
+
+# Add bookmark (auto-fetches title & description)
+python3 "$SKILL/bookmarks.py" add -u "https://example.com/article"
+
+# Add with tags and category
+python3 "$SKILL/bookmarks.py" add -u "https://docs.python.org" --tags "python,docs" -c "Programming"
+
+# List all bookmarks
+python3 "$SKILL/bookmarks.py" list
+
+# Search bookmarks
+python3 "$SKILL/bookmarks.py" search -q "python tutorial"
+
+# List all tags
+python3 "$SKILL/bookmarks.py" tags
+
+# Export to JSON
+python3 "$SKILL/bookmarks.py" export -o bookmarks.json --format json
+```
+
+### Files
+
+```
+bookmarks/
+├── SKILL.md
+└── bookmarks.py
+```
 
 ---
 
@@ -65,6 +115,52 @@ convert-to-md/
 └── scripts/
     ├── pdf_to_markdown.py
     └── pptx_to_markdown.py
+```
+
+---
+
+## csv-tools
+
+Manipulate CSV files - view, filter, sort, convert to JSON/Markdown.
+
+### Usage
+
+```bash
+SKILL="$HOME/.claude/skills/csv-tools"
+
+# View CSV info
+python3 "$SKILL/csv_tools.py" info data.csv
+
+# Show first/last rows
+python3 "$SKILL/csv_tools.py" head data.csv -n 20
+python3 "$SKILL/csv_tools.py" tail data.csv -n 10
+
+# Filter rows
+python3 "$SKILL/csv_tools.py" filter data.csv -w "status == 'active'"
+python3 "$SKILL/csv_tools.py" filter data.csv -w "age > 30"
+
+# Select columns
+python3 "$SKILL/csv_tools.py" select data.csv -c "name,email,phone"
+
+# Sort
+python3 "$SKILL/csv_tools.py" sort data.csv -s "created_at" --desc
+
+# Statistics
+python3 "$SKILL/csv_tools.py" stats data.csv
+
+# Convert to JSON
+python3 "$SKILL/csv_tools.py" to-json data.csv -o data.json
+
+# Convert to Markdown table
+python3 "$SKILL/csv_tools.py" to-markdown data.csv -o table.md
+```
+
+### Files
+
+```
+csv-tools/
+├── SKILL.md
+└── csv_tools.py
 ```
 
 ---
@@ -109,6 +205,186 @@ gws tasks tasks insert --params '{"tasklist": "@default"}' --json '{"title": "Ne
 ```
 gws/
 └── SKILL.md
+```
+
+---
+
+## image-tools
+
+Manipulate images - resize, compress, convert, rotate, crop, watermark.
+
+### Installation
+
+```bash
+pip install Pillow
+```
+
+### Usage
+
+```bash
+SKILL="$HOME/.claude/skills/image-tools"
+
+# View image info
+python3 "$SKILL/image_tools.py" info photo.jpg
+
+# Resize (keeps aspect ratio)
+python3 "$SKILL/image_tools.py" resize photo.jpg -w 800 -o small.jpg
+
+# Compress JPEG
+python3 "$SKILL/image_tools.py" compress photo.jpg -q 70 -o compressed.jpg
+
+# Convert format
+python3 "$SKILL/image_tools.py" convert image.png -o image.jpg
+
+# Create thumbnail
+python3 "$SKILL/image_tools.py" thumbnail photo.jpg -w 150 -h 150
+
+# Rotate
+python3 "$SKILL/image_tools.py" rotate photo.jpg -a 90 -o rotated.jpg
+
+# Add watermark
+python3 "$SKILL/image_tools.py" watermark photo.jpg -t "Copyright 2024" -o marked.jpg
+
+# Grayscale
+python3 "$SKILL/image_tools.py" grayscale photo.jpg -o bw.jpg
+
+# Crop (left, top, right, bottom)
+python3 "$SKILL/image_tools.py" crop photo.jpg --crop 100 100 500 400 -o cropped.jpg
+```
+
+### Files
+
+```
+image-tools/
+├── SKILL.md
+└── image_tools.py
+```
+
+---
+
+## journal
+
+Daily journaling with templates saved to Obsidian vault.
+
+### Usage
+
+```bash
+SKILL="$HOME/.claude/skills/journal"
+
+# View/create today's entry
+python3 "$SKILL/journal.py" today
+
+# Add a quick note
+python3 "$SKILL/journal.py" add -t "Had a great meeting with the team"
+
+# Add with mood and energy
+python3 "$SKILL/journal.py" add -t "Feeling productive" -m great -e 5
+
+# Add to gratitude section
+python3 "$SKILL/journal.py" add -t "Grateful for sunny weather" -s gratitude
+
+# Add morning reflection
+python3 "$SKILL/journal.py" add -t "Planning to focus on project X" -s morning
+
+# View this week
+python3 "$SKILL/journal.py" week
+
+# View month
+python3 "$SKILL/journal.py" month
+
+# Search entries
+python3 "$SKILL/journal.py" search -q "project meeting"
+
+# View stats
+python3 "$SKILL/journal.py" stats
+
+# Get writing prompts
+python3 "$SKILL/journal.py" prompts
+```
+
+### Template Sections
+
+Each daily entry includes:
+- **Morning** - Start of day thoughts
+- **Tasks & Goals** - Today's todos
+- **Journal** - Main journaling area
+- **Gratitude** - 3 things grateful for
+- **Evening Reflection** - End of day review
+
+### Files
+
+```
+journal/
+├── SKILL.md
+└── journal.py
+```
+
+---
+
+## json-tools
+
+Manipulate JSON - format, validate, query, diff, merge, convert.
+
+### Usage
+
+```bash
+SKILL="$HOME/.claude/skills/json-tools"
+
+# View JSON info
+python3 "$SKILL/json_tools.py" info data.json
+
+# Pretty print
+python3 "$SKILL/json_tools.py" format data.json -o pretty.json
+
+# Minify
+python3 "$SKILL/json_tools.py" minify data.json -o min.json
+
+# Validate syntax
+python3 "$SKILL/json_tools.py" validate data.json
+
+# List all keys
+python3 "$SKILL/json_tools.py" keys data.json
+
+# Query specific path
+python3 "$SKILL/json_tools.py" query data.json -p "users[0].email"
+
+# Set value
+python3 "$SKILL/json_tools.py" set config.json -p "debug" -v "true"
+
+# Delete key
+python3 "$SKILL/json_tools.py" delete data.json -p "temp_field"
+
+# Compare two files
+python3 "$SKILL/json_tools.py" diff old.json new.json
+
+# Merge files
+python3 "$SKILL/json_tools.py" merge a.json b.json -o combined.json
+
+# Convert to CSV (array of objects)
+python3 "$SKILL/json_tools.py" to-csv users.json -o users.csv
+
+# Convert to YAML
+python3 "$SKILL/json_tools.py" to-yaml config.json -o config.yaml
+
+# Flatten nested JSON
+python3 "$SKILL/json_tools.py" flatten nested.json -o flat.json
+```
+
+### Path Syntax
+
+```
+name              # top-level key
+data.users        # nested key
+users[0]          # array index
+data.users[0].name # combined
+```
+
+### Files
+
+```
+json-tools/
+├── SKILL.md
+└── json_tools.py
 ```
 
 ---
@@ -159,6 +435,66 @@ $CLI backlinks vault="Leo Knowledge" file="Python"
 ```
 obsidian/
 └── SKILL.md
+```
+
+---
+
+## pdf-tools
+
+Manipulate PDFs - merge, split, extract pages, rotate, compress, extract text/images.
+
+### Installation
+
+```bash
+pip install pypdf
+pip install pypdf[image]  # For image extraction
+```
+
+### Usage
+
+```bash
+SKILL="$HOME/.claude/skills/pdf-tools"
+
+# View PDF info
+python3 "$SKILL/pdf_tools.py" info document.pdf
+
+# Merge PDFs
+python3 "$SKILL/pdf_tools.py" merge file1.pdf file2.pdf file3.pdf -o combined.pdf
+
+# Split into pages
+python3 "$SKILL/pdf_tools.py" split document.pdf -o pages/
+
+# Extract pages 1-5
+python3 "$SKILL/pdf_tools.py" extract document.pdf -p 1-5 -o extract.pdf
+
+# Extract specific pages
+python3 "$SKILL/pdf_tools.py" extract document.pdf -p "1,3,5,10-15" -o selected.pdf
+
+# Rotate 90 degrees
+python3 "$SKILL/pdf_tools.py" rotate document.pdf -a 90 -o rotated.pdf
+
+# Compress PDF
+python3 "$SKILL/pdf_tools.py" compress large.pdf -o smaller.pdf
+
+# Extract text
+python3 "$SKILL/pdf_tools.py" text document.pdf -o content.txt
+
+# Extract images
+python3 "$SKILL/pdf_tools.py" images document.pdf -o images/
+
+# Encrypt with password
+python3 "$SKILL/pdf_tools.py" encrypt document.pdf --password secret -o protected.pdf
+
+# Decrypt
+python3 "$SKILL/pdf_tools.py" decrypt protected.pdf --password secret -o unlocked.pdf
+```
+
+### Files
+
+```
+pdf-tools/
+├── SKILL.md
+└── pdf_tools.py
 ```
 
 ---
