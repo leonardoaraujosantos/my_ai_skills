@@ -132,7 +132,7 @@ def get_transcript(video_id, language_code='en', include_timestamps=False):
                     is_generated = t.is_generated
                     actual_language = t.language_code
                     break
-            except:
+            except Exception:
                 pass
 
         if not transcript:

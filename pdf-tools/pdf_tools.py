@@ -40,16 +40,14 @@ Dependencies:
 """
 
 import sys
-import os
-import re
 from pathlib import Path
 
 try:
-    from pypdf import PdfReader, PdfWriter, PdfMerger
+    from pypdf import PdfReader, PdfWriter
     HAS_PYPDF = True
 except ImportError:
     try:
-        from PyPDF2 import PdfReader, PdfWriter, PdfMerger
+        from PyPDF2 import PdfReader, PdfWriter
         HAS_PYPDF = True
     except ImportError:
         HAS_PYPDF = False
@@ -144,18 +142,20 @@ def cmd_merge(pdf_files, output):
         print("Error: Need at least 2 PDF files to merge")
         return
 
-    merger = PdfMerger()
+    writer = PdfWriter()
 
     for pdf in pdf_files:
         if not Path(pdf).exists():
             print(f"Error: File not found: {pdf}")
             return
         print(f"Adding: {pdf}")
-        merger.append(pdf)
+        reader = PdfReader(pdf)
+        for page in reader.pages:
+            writer.add_page(page)
 
     output = output or "merged.pdf"
-    merger.write(output)
-    merger.close()
+    with open(output, 'wb') as f:
+        writer.write(f)
 
     print(f"\nMerged {len(pdf_files)} files into: {output}")
 

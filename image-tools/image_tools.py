@@ -32,18 +32,17 @@ Examples:
     python image_tools.py compress photo.jpg -q 70 -o compressed.jpg
     python image_tools.py convert photo.png -o photo.jpg
     python image_tools.py thumbnail photo.jpg -w 150 -h 150
-    python image_tools.py watermark photo.jpg -t "Copyright 2024" -o marked.jpg
+    python image_tools.py watermark photo.jpg -t "Copyright 2025" -o marked.jpg
 
 Dependencies:
     pip install Pillow
 """
 
 import sys
-import os
 from pathlib import Path
 
 try:
-    from PIL import Image, ImageDraw, ImageFont, ImageFilter, ExifTags
+    from PIL import Image, ImageDraw, ImageFont, ExifTags
 except ImportError:
     print("Error: Pillow is required. Install with: pip install Pillow")
     sys.exit(1)
@@ -244,7 +243,7 @@ def cmd_watermark(img_path, text, output=None, quality=85):
         font_size = max(20, img.width // 20)
         try:
             font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", font_size)
-        except:
+        except Exception:
             font = ImageFont.load_default()
 
         # Get text size

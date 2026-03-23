@@ -17,7 +17,7 @@ SKILL_DIR="$HOME/.claude/skills/journal"
 ## Vault Location
 
 ```
-~/Library/Mobile Documents/iCloud~md~obsidian/Documents/Leo Knowledge/Journal/Daily/YYYY-MM/
+~/work/leo-obsidian-vault/Journal/Daily/YYYY-MM/
 ```
 
 ## Commands
@@ -90,3 +90,13 @@ Each daily entry includes:
 - **Journal** - Main journaling area
 - **Gratitude** - 3 things grateful for
 - **Evening Reflection** - End of day review
+
+---
+
+## Syncing Changes
+
+After adding journal entries, sync to GitHub and iCloud:
+
+```bash
+cd /Users/leonardoaraujo/work/leo-obsidian-vault && git add -A && git commit -m "Journal update" && git push && rsync -av --delete --exclude='.git/' --exclude='.DS_Store' --exclude='.obsidian/workspace.json' --exclude='.obsidian/workspace-mobile.json' --exclude='.smart-env/' --exclude='.trash/' /Users/leonardoaraujo/work/leo-obsidian-vault/ "/Users/leonardoaraujo/Library/Mobile Documents/iCloud~md~obsidian/Documents/Leo Knowledge/"
+```

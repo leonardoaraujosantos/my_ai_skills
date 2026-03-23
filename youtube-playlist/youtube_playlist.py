@@ -28,7 +28,7 @@ import re
 from datetime import datetime
 
 # Constants
-OBSIDIAN_VAULT = "/Users/leonardoaraujo/Library/Mobile Documents/iCloud~md~obsidian/Documents/Leo Knowledge"
+OBSIDIAN_VAULT = "/Users/leonardoaraujo/work/leo-obsidian-vault"
 PLAYLISTS_BASE = f"{OBSIDIAN_VAULT}/Resources/YouTube Playlists"
 
 

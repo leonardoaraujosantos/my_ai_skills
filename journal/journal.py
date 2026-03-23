@@ -41,7 +41,7 @@ from pathlib import Path
 import random
 
 # Configuration
-OBSIDIAN_VAULT = Path("/Users/leonardoaraujo/Library/Mobile Documents/iCloud~md~obsidian/Documents/Leo Knowledge")
+OBSIDIAN_VAULT = Path("/Users/leonardoaraujo/work/leo-obsidian-vault")
 JOURNAL_DIR = OBSIDIAN_VAULT / "Journal"
 DAILY_DIR = JOURNAL_DIR / "Daily"
 

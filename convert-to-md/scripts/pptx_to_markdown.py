@@ -7,14 +7,11 @@ preserving text, structure, and extracting images.
 """
 
 import argparse
-import os
 import sys
 from pathlib import Path
-from io import BytesIO
 
 try:
     from pptx import Presentation
-    from pptx.util import Inches, Pt
     from pptx.enum.shapes import MSO_SHAPE_TYPE
 except ImportError:
     print("Error: python-pptx is required. Install it with: pip install python-pptx")
@@ -115,7 +112,7 @@ def get_shape_sort_key(shape):
         top = shape.top if shape.top else 0
         left = shape.left if shape.left else 0
         return (top, left)
-    except:
+    except Exception:
         return (0, 0)
 
 

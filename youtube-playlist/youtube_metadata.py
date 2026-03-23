@@ -21,7 +21,6 @@ import sys
 import json
 import subprocess
 import re
-from datetime import datetime
 
 
 def check_ytdlp():
@@ -78,7 +77,7 @@ def format_date(date_str):
         return "N/A"
     try:
         return f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
-    except:
+    except Exception:
         return date_str
 
 

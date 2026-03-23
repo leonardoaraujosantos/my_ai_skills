@@ -159,12 +159,12 @@ def cmd_filter(file_path, condition, has_header=True, output=None):
     headers, rows = read_csv(file_path, has_header)
 
     # Parse condition (simple parser for: column op value)
-    match = re.match(r'(\w+)\s*(==|!=|>|<|>=|<=|contains)\s*["\']?([^"\']*)["\']?', condition)
-    if not match:
+    cond_match = re.match(r'(\w+)\s*(==|!=|>|<|>=|<=|contains)\s*["\']?([^"\']*)["\']?', condition)
+    if not cond_match:
         print(f"Invalid condition: {condition}")
         return
 
-    col_name, op, value = match.groups()
+    col_name, op, value = cond_match.groups()
 
     if col_name not in headers:
         print(f"Column not found: {col_name}")
@@ -181,23 +181,23 @@ def cmd_filter(file_path, condition, has_header=True, output=None):
 
         try:
             if op == '==':
-                match = cell == value
+                passes = cell == value
             elif op == '!=':
-                match = cell != value
+                passes = cell != value
             elif op == '>':
-                match = float(cell) > float(value)
+                passes = float(cell) > float(value)
             elif op == '<':
-                match = float(cell) < float(value)
+                passes = float(cell) < float(value)
             elif op == '>=':
-                match = float(cell) >= float(value)
+                passes = float(cell) >= float(value)
             elif op == '<=':
-                match = float(cell) <= float(value)
+                passes = float(cell) <= float(value)
             elif op == 'contains':
-                match = value.lower() in cell.lower()
+                passes = value.lower() in cell.lower()
             else:
-                match = False
+                passes = False
 
-            if match:
+            if passes:
                 filtered.append(row)
         except (ValueError, TypeError):
             continue

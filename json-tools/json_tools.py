@@ -42,12 +42,10 @@ Examples:
 """
 
 import sys
-import os
 import json
 import re
 import csv
 from pathlib import Path
-from collections import OrderedDict
 
 
 def format_size(size_bytes):

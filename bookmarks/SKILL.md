@@ -23,7 +23,7 @@ SKILL_DIR="$HOME/.claude/skills/bookmarks"
 ## Vault Location
 
 ```
-~/Library/Mobile Documents/iCloud~md~obsidian/Documents/Leo Knowledge/Resources/Bookmarks/
+~/work/leo-obsidian-vault/Resources/Bookmarks/
 ```
 
 ## Commands
@@ -88,3 +88,13 @@ Each bookmark creates a note with:
 - Title and description
 - Space for personal notes
 - Hashtags for easy searching
+
+---
+
+## Syncing Changes
+
+After adding bookmarks, sync to GitHub and iCloud:
+
+```bash
+cd /Users/leonardoaraujo/work/leo-obsidian-vault && git add -A && git commit -m "Add bookmark" && git push && rsync -av --delete --exclude='.git/' --exclude='.DS_Store' --exclude='.obsidian/workspace.json' --exclude='.obsidian/workspace-mobile.json' --exclude='.smart-env/' --exclude='.trash/' /Users/leonardoaraujo/work/leo-obsidian-vault/ "/Users/leonardoaraujo/Library/Mobile Documents/iCloud~md~obsidian/Documents/Leo Knowledge/"
+```

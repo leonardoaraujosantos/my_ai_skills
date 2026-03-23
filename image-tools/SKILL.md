@@ -75,7 +75,7 @@ python3 "$SKILL_DIR/image_tools.py" thumbnail photo.jpg -w 150 -h 150
 python3 "$SKILL_DIR/image_tools.py" rotate photo.jpg -a 90 -o rotated.jpg
 
 # Add watermark
-python3 "$SKILL_DIR/image_tools.py" watermark photo.jpg -t "Copyright 2024" -o marked.jpg
+python3 "$SKILL_DIR/image_tools.py" watermark photo.jpg -t "Copyright 2025" -o marked.jpg
 
 # Grayscale
 python3 "$SKILL_DIR/image_tools.py" grayscale photo.jpg -o bw.jpg

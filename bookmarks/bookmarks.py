@@ -51,7 +51,7 @@ except ImportError:
     HAS_REQUESTS = False
 
 # Configuration
-OBSIDIAN_VAULT = Path("/Users/leonardoaraujo/Library/Mobile Documents/iCloud~md~obsidian/Documents/Leo Knowledge")
+OBSIDIAN_VAULT = Path("/Users/leonardoaraujo/work/leo-obsidian-vault")
 BOOKMARKS_DIR = OBSIDIAN_VAULT / "Resources" / "Bookmarks"
 BOOKMARKS_INDEX = BOOKMARKS_DIR / "_index.md"
 
@@ -334,7 +334,7 @@ def list_tags():
         print(f"  #{tag}: {count}")
 
 
-def export_bookmarks(output, format='json'):
+def export_bookmarks(output, fmt='json'):
     """Export bookmarks to file."""
     ensure_dirs()
 
@@ -358,9 +358,9 @@ def export_bookmarks(output, format='json'):
             'tags': [t.strip() for t in tags_match.group(1).split(',')] if tags_match else []
         })
 
-    if format == 'json':
+    if fmt == 'json':
         output_content = json.dumps(bookmarks, indent=2, ensure_ascii=False)
-    elif format == 'html':
+    elif fmt == 'html':
         lines = ['<!DOCTYPE html><html><head><title>Bookmarks</title></head><body>',
                  '<h1>Bookmarks</h1><ul>']
         for b in bookmarks:
@@ -397,7 +397,7 @@ def main():
     category = None
     query = None
     output = None
-    format = 'json'
+    fmt = 'json'
 
     i = 0
     while i < len(args):
@@ -423,7 +423,7 @@ def main():
             output = args[i + 1]
             i += 2
         elif args[i] == '--format' and i + 1 < len(args):
-            format = args[i + 1]
+            fmt = args[i + 1]
             i += 2
         else:
             # Might be a URL directly
@@ -455,7 +455,7 @@ def main():
         if not output:
             print("Error: Output file required (-o/--output)")
             return
-        export_bookmarks(output, format)
+        export_bookmarks(output, fmt)
 
     else:
         print(f"Unknown command: {cmd}")
