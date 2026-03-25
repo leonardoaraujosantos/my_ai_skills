@@ -1,6 +1,6 @@
 ---
 name: pdf-tools
-description: Manipulate PDFs - merge, split, extract pages, rotate, compress, extract text/images. Use when working with PDF files.
+description: Manipulate PDFs - merge, split, extract pages, rotate, compress, extract text/images, create from Markdown. Use when working with PDF files.
 argument-hint: <command> <file> [options]
 ---
 
@@ -38,6 +38,7 @@ python3 "$SKILL_DIR/pdf_tools.py" <command> <file> [options]
 | `metadata` | Show metadata |
 | `encrypt` | Add password protection |
 | `decrypt` | Remove password |
+| `create` | Create PDF from Markdown (uses pandoc, falls back to fpdf2) |
 
 ## Options
 
@@ -83,4 +84,33 @@ python3 "$SKILL_DIR/pdf_tools.py" encrypt document.pdf --password secret -o prot
 
 # Decrypt
 python3 "$SKILL_DIR/pdf_tools.py" decrypt protected.pdf --password secret -o unlocked.pdf
+
+# Create PDF from Markdown
+python3 "$SKILL_DIR/pdf_tools.py" create document.md -o output.pdf
+
+# Create PDF (auto-names to document.pdf)
+python3 "$SKILL_DIR/pdf_tools.py" create document.md
 ```
+
+## Create from Markdown
+
+The `create` command converts Markdown files to PDF. It tries **pandoc** first (best quality with LaTeX tables, code highlighting, and proper formatting). If pandoc is not available, it falls back to **fpdf2** (pure Python).
+
+**Pandoc tips for best results:**
+- Use 2-column tables (repo + description) instead of 3+ columns to fit page width
+- Add YAML frontmatter for title, author, date, margins
+- Use `\newpage` for page breaks
+
+```markdown
+---
+title: "My Document"
+author: "Author Name"
+date: "March 2026"
+geometry: margin=1.5cm
+fontsize: 10pt
+---
+
+# Content here...
+```
+
+**Install pandoc:** `brew install pandoc` (includes LaTeX via BasicTeX)

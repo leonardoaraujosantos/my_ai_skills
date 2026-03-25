@@ -17,6 +17,7 @@ Commands:
     metadata    Show/edit metadata
     encrypt     Add password protection
     decrypt     Remove password protection
+    create      Create PDF from Markdown file (requires pandoc)
 
 Options:
     -o, --output <file>     Output file
@@ -441,6 +442,127 @@ def cmd_metadata(pdf_path):
         print("No metadata found")
 
 
+def cmd_create(md_path, output=None):
+    """Create PDF from Markdown file.
+
+    Tries pandoc first (best quality with LaTeX tables and formatting).
+    Falls back to fpdf2 if pandoc is not available.
+    """
+    import shutil
+    import subprocess
+
+    md_path = Path(md_path)
+    if not md_path.exists():
+        print(f"Error: File not found: {md_path}")
+        return
+
+    if output is None:
+        output = str(md_path.with_suffix('.pdf'))
+
+    # Try pandoc first (best quality)
+    if shutil.which('pandoc'):
+        try:
+            cmd = [
+                'pandoc', str(md_path), '-o', output,
+                '-V', 'geometry:margin=2cm',
+                '-V', 'fontsize=11pt',
+                '-V', 'colorlinks=true',
+                '-V', 'linkcolor=blue',
+                '-V', 'urlcolor=blue',
+            ]
+            # Use pdflatex if available for best table rendering
+            if shutil.which('pdflatex'):
+                cmd.extend(['--pdf-engine=pdflatex'])
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+            if result.returncode == 0:
+                size = Path(output).stat().st_size
+                print(f"Created: {output} ({size / 1024:.1f} KB) [pandoc]")
+                return
+            else:
+                print(f"Pandoc warning: {result.stderr.strip()}, trying fallback...")
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            print("Pandoc failed, trying fallback...")
+
+    # Fallback: fpdf2 (pure Python, no external deps beyond pip)
+    try:
+        from fpdf import FPDF
+    except ImportError:
+        print("Error: Neither pandoc nor fpdf2 available.")
+        print("Install one of:")
+        print("  brew install pandoc       # Best quality (LaTeX tables)")
+        print("  pip install fpdf2         # Pure Python fallback")
+        return
+
+    content = md_path.read_text(encoding='utf-8')
+
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=20)
+    pdf.add_page()
+
+    # Try to use a Unicode-capable font
+    try:
+        pdf.add_font('DejaVu', '', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', uni=True)
+        pdf.add_font('DejaVu', 'B', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', uni=True)
+        default_font = 'DejaVu'
+    except Exception:
+        default_font = 'Helvetica'
+
+    pdf.set_font(default_font, size=11)
+
+    for line in content.split('\n'):
+        stripped = line.strip()
+
+        # Skip YAML frontmatter
+        if stripped == '---':
+            continue
+
+        # Headers
+        if stripped.startswith('# ') and not stripped.startswith('##'):
+            pdf.set_font(default_font, 'B', 18)
+            pdf.cell(0, 12, stripped[2:], new_x="LMARGIN", new_y="NEXT")
+            pdf.ln(4)
+            pdf.set_font(default_font, size=11)
+        elif stripped.startswith('## '):
+            pdf.set_font(default_font, 'B', 15)
+            pdf.cell(0, 10, stripped[3:], new_x="LMARGIN", new_y="NEXT")
+            pdf.ln(3)
+            pdf.set_font(default_font, size=11)
+        elif stripped.startswith('### '):
+            pdf.set_font(default_font, 'B', 13)
+            pdf.cell(0, 9, stripped[4:], new_x="LMARGIN", new_y="NEXT")
+            pdf.ln(2)
+            pdf.set_font(default_font, size=11)
+        elif stripped.startswith('- **') or stripped.startswith('* **'):
+            # Bold list items
+            pdf.cell(5)
+            text = stripped[2:] if stripped.startswith('- ') else stripped[2:]
+            pdf.multi_cell(0, 6, f"  {text}")
+            pdf.ln(1)
+        elif stripped.startswith('- ') or stripped.startswith('* '):
+            pdf.cell(5)
+            pdf.multi_cell(0, 6, f"  {stripped}")
+            pdf.ln(1)
+        elif stripped.startswith('```'):
+            # Code block markers — skip
+            continue
+        elif stripped.startswith('|') and '|' in stripped[1:]:
+            # Table row — render as fixed-width text
+            pdf.set_font('Courier', size=8)
+            pdf.cell(0, 5, stripped, new_x="LMARGIN", new_y="NEXT")
+            pdf.set_font(default_font, size=11)
+        elif stripped == '':
+            pdf.ln(3)
+        elif stripped == '\\newpage':
+            pdf.add_page()
+        else:
+            pdf.multi_cell(0, 6, stripped)
+            pdf.ln(1)
+
+    pdf.output(output)
+    size = Path(output).stat().st_size
+    print(f"Created: {output} ({size / 1024:.1f} KB) [fpdf2]")
+
+
 def print_help():
     print(__doc__)
 
@@ -547,6 +669,12 @@ def main():
             cmd_metadata(files[0])
         else:
             print("Error: PDF file required")
+
+    elif cmd == 'create':
+        if files:
+            cmd_create(files[0], output)
+        else:
+            print("Error: Markdown file required")
 
     else:
         print(f"Unknown command: {cmd}")
