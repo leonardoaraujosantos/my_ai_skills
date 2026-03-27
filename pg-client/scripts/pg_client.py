@@ -582,6 +582,254 @@ def cmd_dump_table(args):
                 print(f"\n-- {len(rows)} rows")
 
 
+# ─── Mermaid ERD Generation ───────────────────────────────────────────────────
+
+# Mapping from PostgreSQL types to Mermaid-compatible short types
+_PG_TYPE_MAP = {
+    "uuid": "uuid",
+    "integer": "int",
+    "bigint": "bigint",
+    "smallint": "smallint",
+    "serial": "serial",
+    "bigserial": "bigserial",
+    "boolean": "bool",
+    "character varying": "varchar",
+    "character": "char",
+    "text": "text",
+    "json": "json",
+    "jsonb": "jsonb",
+    "timestamp with time zone": "timestamptz",
+    "timestamp without time zone": "timestamp",
+    "date": "date",
+    "time with time zone": "timetz",
+    "time without time zone": "time",
+    "numeric": "numeric",
+    "double precision": "float8",
+    "real": "float4",
+    "bytea": "bytea",
+    "inet": "inet",
+    "cidr": "cidr",
+    "macaddr": "macaddr",
+    "interval": "interval",
+    "point": "point",
+    "polygon": "polygon",
+    "USER-DEFINED": "custom",
+    "ARRAY": "array",
+}
+
+
+def _mermaid_safe(name: str) -> str:
+    """Make a name safe for Mermaid identifiers."""
+    return name.replace("-", "_").replace(" ", "_").replace(".", "__")
+
+
+def cmd_erd(args):
+    """Generate a Mermaid ER diagram from the database schema and save to file."""
+    schema = args.schema or "public"
+    output_path = args.output
+
+    # Query columns
+    sql_columns = """
+        SELECT c.table_name, c.column_name, c.data_type, c.is_nullable,
+               c.character_maximum_length,
+               CASE
+                   WHEN tc.constraint_type = 'PRIMARY KEY' THEN 'PK'
+                   WHEN tc.constraint_type = 'FOREIGN KEY' THEN 'FK'
+                   WHEN tc.constraint_type = 'UNIQUE' THEN 'UK'
+                   ELSE ''
+               END as constraint_type
+        FROM information_schema.columns c
+        LEFT JOIN information_schema.key_column_usage kcu
+            ON c.table_schema = kcu.table_schema
+            AND c.table_name = kcu.table_name
+            AND c.column_name = kcu.column_name
+        LEFT JOIN information_schema.table_constraints tc
+            ON kcu.constraint_name = tc.constraint_name
+            AND kcu.table_schema = tc.table_schema
+        WHERE c.table_schema = %s
+        ORDER BY c.table_name, c.ordinal_position
+    """
+
+    # Query foreign keys for relationships
+    sql_fks = """
+        SELECT
+            kcu.table_name AS from_table,
+            kcu.column_name AS from_column,
+            ccu.table_name AS to_table,
+            ccu.column_name AS to_column,
+            rc.update_rule,
+            rc.delete_rule
+        FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu
+            ON tc.constraint_name = kcu.constraint_name
+            AND tc.table_schema = kcu.table_schema
+        JOIN information_schema.constraint_column_usage ccu
+            ON tc.constraint_name = ccu.constraint_name
+            AND tc.table_schema = ccu.table_schema
+        LEFT JOIN information_schema.referential_constraints rc
+            ON tc.constraint_name = rc.constraint_name
+            AND tc.table_schema = rc.constraint_schema
+        WHERE tc.table_schema = %s
+            AND tc.constraint_type = 'FOREIGN KEY'
+        ORDER BY kcu.table_name
+    """
+
+    # Query table comments
+    sql_comments = """
+        SELECT c.relname as table_name,
+               pg_catalog.obj_description(c.oid, 'pg_class') as comment
+        FROM pg_catalog.pg_class c
+        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = %s
+            AND c.relkind IN ('r', 'p')
+            AND pg_catalog.obj_description(c.oid, 'pg_class') IS NOT NULL
+    """
+
+    with get_conn(args) as conn:
+        conn.autocommit = True
+        with conn.cursor() as cur:
+            # Fetch columns
+            cur.execute(sql_columns, (schema,))
+            col_rows = cur.fetchall()
+
+            # Fetch FK relationships
+            cur.execute(sql_fks, (schema,))
+            fk_rows = cur.fetchall()
+
+            # Fetch comments
+            cur.execute(sql_comments, (schema,))
+            comment_rows = cur.fetchall()
+
+    # Organize data by table
+    tables = {}
+    for table_name, col_name, data_type, nullable, max_len, constraint in col_rows:
+        if table_name not in tables:
+            tables[table_name] = []
+        short_type = _PG_TYPE_MAP.get(data_type, data_type)
+        if max_len and short_type in ("varchar", "char"):
+            short_type = f"{short_type}({max_len})"
+        tables[table_name].append({
+            "name": col_name,
+            "type": short_type,
+            "nullable": nullable == "YES",
+            "constraint": constraint,
+        })
+
+    comments = {r[0]: r[1] for r in comment_rows}
+
+    # Filter tables if specified
+    if args.tables:
+        filter_set = set(args.tables.split(","))
+        tables = {k: v for k, v in tables.items() if k in filter_set}
+        # Also include related tables via FKs
+        related = set()
+        for from_t, from_c, to_t, to_c, _, _ in fk_rows:
+            if from_t in filter_set:
+                related.add(to_t)
+            if to_t in filter_set:
+                related.add(from_t)
+        # Re-fetch related tables if not already included
+        for t in related:
+            if t not in tables:
+                # Need to re-query for these tables
+                pass  # They'll be included in the full col_rows
+
+    # Build Mermaid ERD
+    lines = ["erDiagram"]
+
+    # Add table definitions
+    for table_name in sorted(tables.keys()):
+        safe_name = _mermaid_safe(table_name)
+        columns = tables[table_name]
+
+        if comments.get(table_name):
+            lines.append(f'    %% {table_name}: {comments[table_name]}')
+
+        lines.append(f"    {safe_name} {{")
+        for col in columns:
+            constraint_mark = ""
+            if col["constraint"] == "PK":
+                constraint_mark = " PK"
+            elif col["constraint"] == "FK":
+                constraint_mark = " FK"
+            elif col["constraint"] == "UK":
+                constraint_mark = " UK"
+
+            comment = ""
+            if not col["nullable"] and col["constraint"] != "PK":
+                comment = ' "NOT NULL"'
+
+            safe_col = _mermaid_safe(col["name"])
+            lines.append(f'        {col["type"]} {safe_col}{constraint_mark}{comment}')
+        lines.append("    }")
+
+    # Add relationships from foreign keys
+    if fk_rows:
+        lines.append("")
+        lines.append("    %% Relationships")
+        seen_rels = set()
+        for from_table, from_col, to_table, to_col, update_rule, delete_rule in fk_rows:
+            # Only include if both tables are in our diagram
+            if from_table not in tables or to_table not in tables:
+                continue
+
+            rel_key = f"{from_table}-{to_table}-{from_col}"
+            if rel_key in seen_rels:
+                continue
+            seen_rels.add(rel_key)
+
+            safe_from = _mermaid_safe(from_table)
+            safe_to = _mermaid_safe(to_table)
+
+            # Determine cardinality: FK column nullable = 0..1, else 1..1
+            from_cols = tables.get(from_table, [])
+            fk_col = next((c for c in from_cols if c["name"] == from_col), None)
+            if fk_col and fk_col["nullable"]:
+                cardinality = "}o--||"  # many (optional) to one
+            else:
+                cardinality = "}|--||"  # many (required) to one
+
+            label = f"{from_col}"
+            if delete_rule and delete_rule != "NO ACTION":
+                label += f" [{delete_rule}]"
+
+            lines.append(f'    {safe_from} {cardinality} {safe_to} : "{label}"')
+
+    mermaid_content = "\n".join(lines) + "\n"
+
+    # Output
+    if output_path:
+        out_path = Path(output_path)
+        # If it's a directory, create file inside it
+        if out_path.is_dir() or output_path.endswith("/"):
+            out_path.mkdir(parents=True, exist_ok=True)
+            db_name = _get_db_name(args)
+            out_path = out_path / f"{db_name}_erd.md"
+
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Wrap in markdown code block if .md extension
+        if out_path.suffix == ".md":
+            content = f"# {schema} Schema - ER Diagram\n\n```mermaid\n{mermaid_content}```\n"
+        else:
+            content = mermaid_content
+
+        out_path.write_text(content)
+        print(f"ERD saved to: {out_path}")
+        print(f"Tables: {len(tables)}, Relationships: {len(seen_rels) if fk_rows else 0}")
+    else:
+        print(mermaid_content)
+        print(f"---\nTables: {len(tables)}, Relationships: {len([r for r in fk_rows if r[0] in tables and r[2] in tables]) if fk_rows else 0}")
+
+
+def _get_db_name(args) -> str:
+    """Extract database name from DSN for filename."""
+    dsn = _resolve_dsn(args)
+    if "/" in dsn:
+        return dsn.rsplit("/", 1)[-1].split("?")[0]
+    return "database"
+
+
 # ─── Apache AGE Graph Queries ────────────────────────────────────────────────
 
 def cmd_graph(args):
@@ -879,6 +1127,12 @@ def main():
     p.add_argument("--table", help="Filter by table")
     add_conn_args(p)
 
+    # ERD
+    p = sub.add_parser("erd", help="Generate Mermaid ER diagram")
+    p.add_argument("-o", "--output", help="Output file or directory path")
+    p.add_argument("--tables", help="Comma-separated table names to include (default: all)")
+    add_conn_args(p)
+
     # Apache AGE graph
     p = sub.add_parser("graph", help="Execute Cypher graph query")
     p.add_argument("graph", help="Graph name")
@@ -933,6 +1187,7 @@ def main():
         "vacuum": cmd_vacuum,
         "slow": cmd_slow_queries,
         "rls": cmd_rls,
+        "erd": cmd_erd,
         "graph": cmd_graph,
         "graphs": cmd_graph_list,
         "graph-schema": cmd_graph_schema,

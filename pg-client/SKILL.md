@@ -44,6 +44,11 @@ Requires `psycopg2` (already installed). For graph queries, the database needs A
 | `sample <table>` | Random sample rows |
 | `dump <table>` | Dump as INSERT statements, CSV, or JSON |
 
+### Diagram Generation
+| Command | Description |
+|---------|-------------|
+| `erd [-o path] [--tables t1,t2]` | Generate Mermaid ER diagram, optionally save to file/folder |
+
 ### Database Health & Stats
 | Command | Description |
 |---------|-------------|
@@ -122,6 +127,13 @@ python3 "$PG_CLIENT" sample orders -p local -n 5
 # Dump table
 python3 "$PG_CLIENT" dump users -p local -f csv
 python3 "$PG_CLIENT" dump users -p local -f json -n 100
+
+# ER Diagram generation
+python3 "$PG_CLIENT" erd -p local                                      # Print to stdout
+python3 "$PG_CLIENT" erd -p local -o ./diagrams/                       # Save to folder (auto-names as db_erd.md)
+python3 "$PG_CLIENT" erd -p local -o ./schema.md                       # Save to specific file (.md wraps in code block)
+python3 "$PG_CLIENT" erd -p local -o ./schema.mmd                      # Save raw Mermaid (no markdown wrapper)
+python3 "$PG_CLIENT" erd -p local --tables "users,orders,products"     # Only specific tables + their FK relationships
 
 # Database health
 python3 "$PG_CLIENT" size -p local
