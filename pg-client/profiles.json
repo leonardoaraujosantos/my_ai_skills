@@ -1,0 +1,5 @@
+{
+  "bridge": {
+    "dsn": "postgresql://bridge:bridge_secret@localhost:5432/bridge"
+  }
+}
