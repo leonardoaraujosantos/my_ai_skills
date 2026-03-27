@@ -1,0 +1,10 @@
+{
+  "deep-agent": {
+    "transport": "http",
+    "url": "https://bridge-deep-agent.osl.dev.amini.ai/mcp/"
+  },
+  "amini-rag": {
+    "transport": "http",
+    "url": "https://rag-mcp-bridge.bbd.prd.amini.ai/mcp/"
+  }
+}
