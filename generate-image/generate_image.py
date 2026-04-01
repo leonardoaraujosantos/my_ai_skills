@@ -15,7 +15,7 @@ import urllib.error
 import mimetypes
 from pathlib import Path
 
-API_KEY = "AIzaSyByzbDXLnhtubyglfEclWrooIvEbJ33fX0"
+API_KEY = os.environ.get("GEMINI_API_KEY", "")
 BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 
 
@@ -630,6 +630,12 @@ Examples:
     if args.command is None:
         parser.print_help()
         sys.exit(0)
+
+    if not API_KEY:
+        print("Error: GEMINI_API_KEY environment variable not set.", file=sys.stderr)
+        print("Set it with: export GEMINI_API_KEY='your-key-here'", file=sys.stderr)
+        print("Or add to Claude Code settings: /update-config set GEMINI_API_KEY=your-key", file=sys.stderr)
+        sys.exit(1)
 
     if args.command in ("generate", "gen", "g"):
         saved = cmd_generate_image(args.prompt, args.output, args.size, args.count, args.model)
