@@ -24,14 +24,21 @@ ln -s /path/to/my_ai_skills/youtube-playlist ~/.claude/skills/youtube-playlist
 | Skill | Description | Dependencies |
 |-------|-------------|--------------|
 | [bookmarks](#bookmarks) | Save URLs to Obsidian vault | `requests`, `beautifulsoup4` |
+| [code-review](#code-review) | Review code for architecture, security & test coverage | None |
 | [convert-to-md](#convert-to-md) | Convert PDF/PPTX to Markdown | `pymupdf`, `python-pptx` |
+| [coolify](#coolify) | Manage Coolify deployments & env vars via API | None |
 | [csv-tools](#csv-tools) | CSV manipulation & conversion | None |
+| [generate-image](#generate-image) | AI media studio: images, video, music, TTS, analysis | `GEMINI_API_KEY` env var |
 | [gws](#gws) | Google Workspace CLI integration | `gws` (npm) |
 | [image-tools](#image-tools) | Image manipulation | `Pillow` |
 | [journal](#journal) | Daily journaling to Obsidian | None |
 | [json-tools](#json-tools) | JSON manipulation & queries | None (optional: `pyyaml`) |
+| [mcp-client](#mcp-client) | Test, explore & manage MCP servers | `mcp` (pip) |
+| [mermaid](#mermaid) | Create cross-platform Mermaid diagrams | None |
 | [obsidian](#obsidian) | Obsidian vault management | Obsidian CLI |
 | [pdf-tools](#pdf-tools) | PDF manipulation | `pypdf` |
+| [pg-client](#pg-client) | PostgreSQL client with graph & RLS support | `psycopg2` |
+| [study-this](#study-this) | Process study references & manage Obsidian study notes | `gws` (npm), `yt-dlp` |
 | [sync-skills](#sync-skills) | Sync skills to GitHub repo | None |
 | [youtube-playlist](#youtube-playlist) | YouTube playlist & CC extraction | `yt-dlp`, `youtube-transcript-api` |
 
@@ -81,6 +88,60 @@ bookmarks/
 
 ---
 
+## code-review
+
+Review changed code for architecture compliance, security vulnerabilities, and test coverage. Enforces Hexagonal Architecture for backend projects and MVVM for frontend projects. Detects test gaps and runs tests when possible.
+
+### Usage
+
+```bash
+# Review a GitHub PR
+/code-review https://github.com/org/repo/pull/123
+
+# Review a branch diff
+/code-review feature-branch
+
+# Review staged + unstaged changes (no argument)
+/code-review
+
+# Backend-only review
+/code-review --backend
+
+# Frontend-only review
+/code-review --frontend
+
+# Security-focused review only
+/code-review --security-only
+
+# Test coverage review only
+/code-review --tests-only
+```
+
+### Review Output
+
+Each finding follows a structured format with severity levels:
+
+- **CRITICAL** -- Must fix before merge (security vulnerabilities, data loss risk)
+- **MAJOR** -- Should fix before merge (architecture violations, missing error handling)
+- **MINOR** -- Nice to fix (style issues, naming)
+- **NIT** -- Optional (cosmetic suggestions)
+
+The review ends with a summary including verdict (APPROVE / REQUEST CHANGES / NEEDS DISCUSSION), architecture compliance, security assessment, test coverage gaps, and top priorities.
+
+### Architecture Rules
+
+- **Backend (Hexagonal):** Strict separation of domain, ports, and adapters. Domain must not import infrastructure. Dependency direction always inward.
+- **Frontend (MVVM):** Clean separation between View, ViewModel, and Model. No API calls or business logic in components.
+
+### Files
+
+```
+code-review/
+└── SKILL.md
+```
+
+---
+
 ## convert-to-md
 
 Convert PDF and PowerPoint files to Markdown format with image extraction.
@@ -115,6 +176,73 @@ convert-to-md/
 └── scripts/
     ├── pdf_to_markdown.py
     └── pptx_to_markdown.py
+```
+
+---
+
+## coolify
+
+Manage Coolify applications, deployments, environment variables, and services through the Coolify API.
+
+### Installation
+
+Set the required environment variables:
+
+```bash
+export COOLIFY_URL="https://coolify.example.com"
+export COOLIFY_TOKEN="your-api-token"
+```
+
+The CLI tool uses only Python stdlib (no pip dependencies needed).
+
+### Usage
+
+```bash
+COOLIFY="COOLIFY_URL=$COOLIFY_URL COOLIFY_TOKEN=$COOLIFY_TOKEN python3 ~/.claude/skills/coolify/coolify_cli.py"
+
+# List applications
+$COOLIFY apps
+
+# Show application details
+$COOLIFY app <app-uuid>
+
+# List environment variables
+$COOLIFY app-envs <app-uuid>
+
+# Set / update an environment variable
+$COOLIFY app-env-set <app-uuid> MY_KEY "my-value"
+
+# Set a JSON env var (use --literal to prevent brace interpolation)
+$COOLIFY app-env-set <app-uuid> MCP_CONFIG '{"name":"agent","url":"https://..."}' --literal
+
+# Delete an environment variable
+$COOLIFY app-env-delete <app-uuid> <env-uuid>
+
+# Trigger deployment
+$COOLIFY deploy <app-uuid>
+
+# Force redeploy (no cache)
+$COOLIFY deploy <app-uuid> --force
+
+# List recent deployments
+$COOLIFY deployments <app-uuid> --limit 5
+
+# View application logs
+$COOLIFY logs <app-uuid> --lines 100
+
+# List services / servers / resources / teams
+$COOLIFY services
+$COOLIFY servers
+$COOLIFY resources
+$COOLIFY teams
+```
+
+### Files
+
+```
+coolify/
+├── SKILL.md
+└── coolify_cli.py
 ```
 
 ---
@@ -161,6 +289,138 @@ python3 "$SKILL/csv_tools.py" to-markdown data.csv -o table.md
 csv-tools/
 ├── SKILL.md
 └── csv_tools.py
+```
+
+---
+
+## generate-image
+
+Full AI media generation suite powered by Google Gemini API. Generate images, videos, music, speech, or analyze images to extract prompts for all tools.
+
+Requires the `GEMINI_API_KEY` environment variable to be set.
+
+### Models
+
+| Command | Model | Description |
+|---------|-------|-------------|
+| `generate` | Nano Banana 2 / Imagen 4 | Image generation |
+| `video` | Veo 3.1 | Video generation (text-to-video and image-to-video) |
+| `music` | Lyria 3 | Music generation |
+| `tts` | Gemini TTS | Text-to-speech with multiple voices |
+| `analyze` | Gemini | Image analysis and prompt extraction |
+
+### Usage
+
+```bash
+SKILL_DIR="$HOME/.claude/skills/generate-image"
+```
+
+#### 1. `generate` -- Image Generation (Nano Banana 2 / Imagen 4)
+
+```bash
+# Generate an image
+python3 "$SKILL_DIR/generate_image.py" generate "A cute robot in a wasteland" -o robot.png
+
+# Custom size (1024x1024, 1536x1024, 1024x1536)
+python3 "$SKILL_DIR/generate_image.py" generate "Character sheet, anime style robot" -o sheet.png -s 1536x1024
+
+# Generate multiple images (1-4)
+python3 "$SKILL_DIR/generate_image.py" generate "Landscape variations" -n 4
+
+# Options: --output/-o, --size/-s, --count/-n, --model/-m
+```
+
+#### 2. `video` -- Video Generation (Veo 3.1)
+
+```bash
+# Text to video
+python3 "$SKILL_DIR/generate_image.py" video "A small robot walks through ruins and finds a green sprout" -o scene.mp4
+
+# Image to video (animate a still image)
+python3 "$SKILL_DIR/generate_image.py" video "The robot reaches down to touch the plant" --image robot.png -o animated.mp4
+
+# Fast generation with alternate model
+python3 "$SKILL_DIR/generate_image.py" video "Robot building a dome" -m veo-3.1-fast-generate-preview -o dome.mp4
+
+# Options: --output/-o, --model/-m, --duration/-d (5s/8s/10s), --image/-i
+```
+
+Video generation is async -- the script polls until complete (up to 10 min).
+
+#### 3. `music` -- Music Generation (Lyria 3)
+
+```bash
+# Game soundtrack
+python3 "$SKILL_DIR/generate_image.py" music "Hopeful orchestral piece, 90 BPM, D major, soft piano melody with strings" -o theme.wav
+
+# Combat music
+python3 "$SKILL_DIR/generate_image.py" music "Aggressive electronic, 140 BPM, taiko drums, distorted bass" -o combat.wav
+
+# Ambient
+python3 "$SKILL_DIR/generate_image.py" music "Dark ambient, wasteland wind, distant metallic groans, desolate" -o wasteland.wav
+
+# Options: --output/-o, --model/-m (lyria-3-clip-preview, lyria-3-pro-preview), --duration/-d (seconds)
+```
+
+#### 4. `tts` -- Text-to-Speech (Gemini TTS)
+
+```bash
+# Narrator voice
+python3 "$SKILL_DIR/generate_image.py" tts "The world ended. A small robot found a sprout." -v Charon -o narration.wav
+
+# Character dialogue
+python3 "$SKILL_DIR/generate_image.py" tts "I didn't trap them. I preserved them." -v Fenrir -o yuri.wav
+
+# Tutorial voice
+python3 "$SKILL_DIR/generate_image.py" tts "Tap and hold to move your Commander." -v Kore -o tutorial.wav
+
+# Options: --output/-o, --model/-m, --voice/-v
+```
+
+Available voices: Zephyr (bright), Puck (playful), Charon (deep), Kore (calm, default), Fenrir (bold), Leda (warm), Orus (professional), Aoede (expressive), Io (youthful), Elara (gentle).
+
+#### 5. `analyze` -- Image Analysis to Prompts
+
+```bash
+# Full analysis -- prompts for every tool (image, video, music, sfx, voice)
+python3 "$SKILL_DIR/generate_image.py" analyze concept_art.png
+
+# Just video prompt (for Veo 3.1)
+python3 "$SKILL_DIR/generate_image.py" analyze scene.png -t video
+
+# Save analysis to file
+python3 "$SKILL_DIR/generate_image.py" analyze character.png -t all -o prompts.md
+
+# Options: --target/-t (all/image/video/music/sfx/voice), --output/-o
+```
+
+### Full Creative Pipeline Example
+
+```bash
+SKILL_DIR="$HOME/.claude/skills/generate-image"
+
+# 1. Generate concept art
+python3 "$SKILL_DIR/generate_image.py" generate "Cute robot finding a sprout in wasteland, anime style" -o concept.png
+
+# 2. Analyze it to get prompts for everything
+python3 "$SKILL_DIR/generate_image.py" analyze concept.png -t all -o prompts.md
+
+# 3. Generate video from the image
+python3 "$SKILL_DIR/generate_image.py" video "Robot reaches down to touch plant, camera slowly orbits" --image concept.png -o scene.mp4
+
+# 4. Generate matching music
+python3 "$SKILL_DIR/generate_image.py" music "Gentle piano, hopeful, 80 BPM, D major" -o soundtrack.wav
+
+# 5. Generate narration
+python3 "$SKILL_DIR/generate_image.py" tts "In the silence of the wasteland, a small robot found hope." -v Elara -o narration.wav
+```
+
+### Files
+
+```
+generate-image/
+├── SKILL.md
+└── generate_image.py
 ```
 
 ---
@@ -389,6 +649,144 @@ json-tools/
 
 ---
 
+## mcp-client
+
+Test, explore, and manage MCP (Model Context Protocol) servers. Verify connectivity, list tools/resources/prompts, execute tools, benchmark performance, manage auth tokens, and register servers. Supports stdio, SSE, and Streamable HTTP transports.
+
+### Installation
+
+```bash
+pip install mcp
+```
+
+### Usage
+
+```bash
+MCP_CLIENT="$HOME/.claude/skills/mcp-client/scripts/mcp_client.py"
+
+# Register a server
+python3 "$MCP_CLIENT" register my-kg -t http -u http://localhost:8000/mcp
+
+# Save auth token
+python3 "$MCP_CLIENT" token-set my-kg "sk-abc123" --type bearer
+
+# Full exploration (lists tools, resources, resource templates, prompts)
+python3 "$MCP_CLIENT" explore -s my-kg
+
+# List tools
+python3 "$MCP_CLIENT" tools -s my-kg --json
+
+# Call a tool (JSON args)
+python3 "$MCP_CLIENT" call query '{"query": "test"}' -s my-kg
+
+# Call a tool (key=value args)
+python3 "$MCP_CLIENT" call add 'a=2,b=3' -t stdio --cmd python3 --args server.py
+
+# Get tool schema
+python3 "$MCP_CLIENT" schema query -s my-kg
+
+# Read a resource
+python3 "$MCP_CLIENT" resource "file:///path/to/resource" -s my-kg
+
+# Get a prompt
+python3 "$MCP_CLIENT" prompt my-prompt -s my-kg
+
+# Health check with latency metrics
+python3 "$MCP_CLIENT" health -s my-kg --json
+
+# Benchmark tool response time (10 iterations)
+python3 "$MCP_CLIENT" benchmark query '{"q": "test"}' -s my-kg -n 10
+
+# Manage servers
+python3 "$MCP_CLIENT" servers
+python3 "$MCP_CLIENT" unregister my-kg
+
+# Manage tokens
+python3 "$MCP_CLIENT" token-list
+python3 "$MCP_CLIENT" token-delete my-kg
+```
+
+### Connection Options
+
+Every command accepts either a named (registered) server or inline connection flags:
+
+```bash
+# Named server
+python3 "$MCP_CLIENT" explore -s my-server
+
+# Inline stdio
+python3 "$MCP_CLIENT" explore -t stdio --cmd mcp --args run server.py
+
+# Inline SSE
+python3 "$MCP_CLIENT" explore -t sse -u http://localhost:8000/sse
+
+# Inline Streamable HTTP
+python3 "$MCP_CLIENT" explore -t http -u http://localhost:8000/mcp
+```
+
+### Files
+
+```
+mcp-client/
+├── SKILL.md
+├── servers.json
+└── scripts/
+    └── mcp_client.py
+```
+
+---
+
+## mermaid
+
+Create Mermaid diagrams that render correctly across Obsidian, GitHub, and Notion. Enforces cross-platform compatibility rules and avoids common rendering bugs.
+
+### Usage
+
+```bash
+# Create a diagram by describing what you need
+/mermaid flowchart showing user authentication flow
+
+# Fix broken Mermaid blocks in a file
+/mermaid fix path/to/file.md
+```
+
+### Key Rules
+
+- Always quote labels with special characters: `A["My Label"]`
+- Never use `<br/>` in labels (breaks Obsidian)
+- Never put standalone (unconnected) nodes inside subgraphs
+- Use ASCII-only for node IDs (accented chars OK in quoted labels)
+- Max 50 nodes / 100 edges per diagram for reliable rendering
+- Avoid emojis for cross-platform compatibility
+
+### Supported Diagram Types
+
+| Type | Compatibility |
+|------|---------------|
+| `graph` / `flowchart` | Obsidian, GitHub, Notion |
+| `sequenceDiagram` | Obsidian, GitHub, Notion |
+| `classDiagram` | Obsidian, GitHub, Notion |
+| `stateDiagram-v2` | Obsidian, GitHub, Notion |
+| `erDiagram` | Obsidian, GitHub, Notion |
+| `gantt` | Obsidian, GitHub, Notion |
+| `pie` | Obsidian, GitHub, Notion |
+| `gitGraph` | Obsidian, GitHub, Notion |
+| `mindmap` | Obsidian (v1.4+), GitHub, Notion |
+| `timeline` | Obsidian (v1.4+), GitHub, Notion |
+
+### Fix Mode
+
+When invoked with `/mermaid fix <file>`, the skill scans all Mermaid blocks in the file and automatically fixes common issues: unquoted labels, `<br/>` tags, standalone subgraph nodes, accented node IDs, and more.
+
+### Files
+
+```
+mermaid/
+└── SKILL.md
+```
+
+---
+
 ## obsidian
 
 Interact with Obsidian vault using the official Obsidian CLI.
@@ -495,6 +893,157 @@ python3 "$SKILL/pdf_tools.py" decrypt protected.pdf --password secret -o unlocke
 pdf-tools/
 ├── SKILL.md
 └── pdf_tools.py
+```
+
+---
+
+## pg-client
+
+Full-featured PostgreSQL client for querying, inspecting, mutating, and graph-querying databases. Supports local, remote, and Supabase connections with saved profiles. Includes Apache AGE graph query support and RLS policy inspection.
+
+### Installation
+
+```bash
+pip install psycopg2
+```
+
+### Usage
+
+```bash
+PG_CLIENT="$HOME/.claude/skills/pg-client/scripts/pg_client.py"
+
+# Save connection profiles
+python3 "$PG_CLIENT" profile-add local "postgresql://user:pass@localhost:5432/mydb"
+python3 "$PG_CLIENT" profile-add supabase "postgresql://postgres.xxxx:pass@aws-0-us-east-1.pooler.supabase.com:6543/postgres" --supabase
+
+# List tables
+python3 "$PG_CLIENT" tables -p local
+
+# Describe a table (columns, types, constraints, indexes, FKs, row count)
+python3 "$PG_CLIENT" describe users -p supabase
+
+# Run a query
+python3 "$PG_CLIENT" query "SELECT * FROM users LIMIT 10" -p local
+python3 "$PG_CLIENT" q "SELECT count(*) FROM orders" -p local -f json
+
+# Run from a .sql file
+python3 "$PG_CLIENT" query report.sql -p local
+
+# Insert/Update with transaction safety
+python3 "$PG_CLIENT" exec "INSERT INTO users (name, email) VALUES ('Leo', 'leo@example.com')" -p local
+python3 "$PG_CLIENT" exec "UPDATE users SET active=true WHERE id=1 RETURNING *" -p local --returning
+
+# Explain a query
+python3 "$PG_CLIENT" explain "SELECT * FROM orders WHERE total > 100" -p local
+
+# Search across text columns
+python3 "$PG_CLIENT" search users "john" -p local
+
+# Random sample
+python3 "$PG_CLIENT" sample orders -p local -n 5
+
+# Dump table (CSV, JSON, or INSERT statements)
+python3 "$PG_CLIENT" dump users -p local -f csv
+python3 "$PG_CLIENT" dump users -p local -f json -n 100
+
+# ER Diagram generation (Mermaid)
+python3 "$PG_CLIENT" erd -p local
+python3 "$PG_CLIENT" erd -p local -o ./diagrams/
+python3 "$PG_CLIENT" erd -p local --tables "users,orders,products"
+
+# Database health
+python3 "$PG_CLIENT" size -p local
+python3 "$PG_CLIENT" activity -p supabase
+python3 "$PG_CLIENT" vacuum -p local
+python3 "$PG_CLIENT" slow -p local
+
+# RLS policies (Supabase)
+python3 "$PG_CLIENT" rls -p supabase
+python3 "$PG_CLIENT" rls --table profiles -p supabase
+
+# Apache AGE graph queries
+python3 "$PG_CLIENT" graphs -p local
+python3 "$PG_CLIENT" graph-schema my_graph -p local
+python3 "$PG_CLIENT" graph my_graph "MATCH (n) RETURN n LIMIT 10" -p local
+python3 "$PG_CLIENT" graph my_graph "MATCH (a)-[r]->(b) RETURN a.name, type(r), b.name LIMIT 20" -p local
+```
+
+### Output Formats
+
+`-f table` (default), `-f json`, `-f csv`, `-f vertical`
+
+### Connection Options
+
+Every command accepts `-p <profile>`, `--dsn <connection_string>`, or the `DATABASE_URL` / `PG_DSN` environment variable.
+
+### Files
+
+```
+pg-client/
+├── SKILL.md
+├── profiles.json
+└── scripts/
+    └── pg_client.py
+```
+
+---
+
+## study-this
+
+Process study references (YouTube videos, PDFs, websites), create Obsidian vault notes under "Things to Study", add Google Tasks, and consolidate learnings back into the vault. Two modes: **Study** (add new references) and **Consolidate** (merge learnings into existing vault notes).
+
+### Usage
+
+#### Study Mode -- Adding New References
+
+```bash
+# Add a YouTube video to study
+/study-this https://youtube.com/watch?v=abc123
+
+# Add multiple references with priority
+/study-this https://youtube.com/watch?v=abc123 https://docs.example.com/guide --priority high
+
+# Add with a specific category
+/study-this https://example.com/article --category "AI"
+```
+
+What it does:
+1. Fetches metadata from each URL (YouTube metadata, page titles, etc.)
+2. Searches the Obsidian vault for existing knowledge on the topic
+3. Creates a study note in `Things to Study/` with references, summaries, and action items
+4. Adds a Google Task to the "Learn and Try" list
+5. Syncs the vault to GitHub and iCloud
+
+#### Consolidate Mode -- Merging Learnings Back
+
+```bash
+# Consolidate a specific study topic
+/study-this consolidate React Server Components
+
+# Or when you finish studying
+# "I finished studying the Remotion tutorial, consolidate it"
+```
+
+What it does:
+1. Reads the study note and extracts key points and notes
+2. Searches the vault for related knowledge notes
+3. Updates existing notes with new learnings or creates new knowledge notes
+4. Marks the study note as `status: consolidated`
+5. Completes the Google Task
+6. Syncs the vault
+
+### Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--priority` | Priority level: high, medium, low | medium |
+| `--category` | Category: Programming, AI, Engineering, etc. | Auto-detected |
+
+### Files
+
+```
+study-this/
+└── SKILL.md
 ```
 
 ---
