@@ -10,30 +10,39 @@ Manage Coolify applications, deployments, environment variables, and services th
 
 ## Setup
 
-The skill requires two environment variables. Check if they're set:
+The skill supports multiple Coolify servers via environment variables:
+
+| Server    | URL env var        | Token env var        |
+|-----------|--------------------|----------------------|
+| sandbox   | `COOLIFY_URL`      | `COOLIFY_TOKEN`      |
+| prd       | `COOLIFY_PRD_URL`  | `COOLIFY_PRD_TOKEN`  |
+
+Check if they're set:
 
 ```bash
-echo "URL: ${COOLIFY_URL:-NOT SET}"
-echo "Token: ${COOLIFY_TOKEN:+SET (hidden)}"
-```
-
-If not set, ask the user for their Coolify URL and API token, then set them:
-
-```bash
-export COOLIFY_URL="https://coolify.example.com"
-export COOLIFY_TOKEN="your-api-token"
+echo "Sandbox URL: ${COOLIFY_URL:-NOT SET}"
+echo "Sandbox Token: ${COOLIFY_TOKEN:+SET (hidden)}"
+echo "Prd URL: ${COOLIFY_PRD_URL:-NOT SET}"
+echo "Prd Token: ${COOLIFY_PRD_TOKEN:+SET (hidden)}"
 ```
 
 ## CLI Tool
 
 All commands use the Python CLI helper at `~/.claude/skills/coolify/coolify_cli.py`.
 
-**Base command:**
+**Base command (defaults to sandbox):**
 ```bash
-COOLIFY_URL="$COOLIFY_URL" COOLIFY_TOKEN="$COOLIFY_TOKEN" python3 ~/.claude/skills/coolify/coolify_cli.py <command> [args...]
+python3 ~/.claude/skills/coolify/coolify_cli.py <command> [args...]
 ```
 
-For brevity in this doc, we'll write `coolify_cli <command>` but always use the full path and env vars.
+**Target a specific server with `--server`:**
+```bash
+python3 ~/.claude/skills/coolify/coolify_cli.py --server prd <command> [args...]
+```
+
+Available servers: `sandbox` (default), `prd`.
+
+For brevity in this doc, we'll write `coolify_cli <command>` but always use the full path.
 
 ---
 

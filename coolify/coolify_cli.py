@@ -8,6 +8,9 @@ Environment:
     COOLIFY_URL   — Coolify instance URL (e.g. https://coolify.example.com)
     COOLIFY_TOKEN — API bearer token
 
+Global options:
+    --server <name>               Select server (sandbox, prd, cyberdyne). Default: sandbox
+
 Commands:
     apps                          List all applications
     app <uuid>                    Show application details
@@ -35,11 +38,24 @@ from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
 
+SERVERS = {
+    "sandbox": {"url_env": "COOLIFY_URL", "token_env": "COOLIFY_TOKEN"},
+    "prd": {"url_env": "COOLIFY_PRD_URL", "token_env": "COOLIFY_PRD_TOKEN"},
+    "cyberdyne": {"url_env": "COOLIFY_CYBERDYNE_URL", "token_env": "COOLIFY_CYBERDYNE_TOKEN"},
+}
+
+_active_server = "sandbox"
+
+
 def get_config():
-    url = os.environ.get("COOLIFY_URL", "").rstrip("/")
-    token = os.environ.get("COOLIFY_TOKEN", "")
+    srv = SERVERS.get(_active_server)
+    if not srv:
+        print(f"Error: Unknown server '{_active_server}'. Available: {', '.join(SERVERS)}", file=sys.stderr)
+        sys.exit(1)
+    url = os.environ.get(srv["url_env"], "").rstrip("/")
+    token = os.environ.get(srv["token_env"], "")
     if not url or not token:
-        print("Error: COOLIFY_URL and COOLIFY_TOKEN must be set", file=sys.stderr)
+        print(f"Error: {srv['url_env']} and {srv['token_env']} must be set for server '{_active_server}'", file=sys.stderr)
         sys.exit(1)
     return url, token
 
@@ -207,7 +223,22 @@ def cmd_teams():
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
+    global _active_server
     args = sys.argv[1:]
+    if not args:
+        print(__doc__)
+        sys.exit(0)
+
+    # Parse --server flag
+    if "--server" in args:
+        idx = args.index("--server")
+        if idx + 1 < len(args):
+            _active_server = args[idx + 1]
+            args = args[:idx] + args[idx + 2:]
+        else:
+            print("Error: --server requires a name (e.g. sandbox, prd)", file=sys.stderr)
+            sys.exit(1)
+
     if not args:
         print(__doc__)
         sys.exit(0)
