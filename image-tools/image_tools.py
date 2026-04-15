@@ -383,9 +383,57 @@ def main():
             print("Error: -t/--text required for watermark")
             return
         cmd_watermark(img_path, text, output, quality)
+    elif cmd == 'chromakey':
+        tolerance = 80
+        chroma_color = (0, 255, 0)  # default green
+        j = 2
+        while j < len(args):
+            if args[j] == '--tolerance' and j + 1 < len(args):
+                tolerance = int(args[j + 1])
+                j += 2
+            elif args[j] == '--color' and j + 1 < len(args):
+                c = args[j + 1].lstrip('#')
+                chroma_color = (int(c[0:2], 16), int(c[2:4], 16), int(c[4:6], 16))
+                j += 2
+            elif args[j] in ('-o', '--output') and j + 1 < len(args):
+                output = args[j + 1]
+                j += 2
+            else:
+                j += 1
+        cmd_chromakey(img_path, chroma_color, tolerance, output)
     else:
         print(f"Unknown command: {cmd}")
         print_help()
+
+
+def cmd_chromakey(img_path, chroma_color=(0, 255, 0), tolerance=80, output=None):
+    """Remove a solid background color and make it transparent."""
+    from PIL import Image
+    import math
+
+    img = Image.open(img_path).convert("RGBA")
+    data = img.getdata()
+    new_data = []
+    cr, cg, cb = chroma_color
+
+    for r, g, b, a in data:
+        dist = math.sqrt((r - cr) ** 2 + (g - cg) ** 2 + (b - cb) ** 2)
+        if dist < tolerance:
+            new_data.append((r, g, b, 0))
+        elif dist < tolerance * 1.5:
+            # Soft edge — partial transparency
+            alpha = int(255 * (dist - tolerance) / (tolerance * 0.5))
+            new_data.append((r, g, b, min(alpha, a)))
+        else:
+            new_data.append((r, g, b, a))
+
+    img.putdata(new_data)
+    if not output:
+        from pathlib import Path
+        p = Path(img_path)
+        output = str(p.parent / f"{p.stem}_transparent.png")
+    img.save(output, "PNG")
+    print(f"Saved: {output} (chroma key removed)")
 
 
 if __name__ == "__main__":
