@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 """
-Gemini Creative Studio — Generate images, videos, music, speech, and analyze media.
-Uses Google Gemini API with Nano Banana 2, Veo 3.1, Lyria 3, and Gemini TTS.
+Creative AI Studio — Generate images, videos, music, speech, and analyze media.
+
+Image generation supports two providers:
+  - OpenAI    (default): gpt-image-1, dall-e-3, dall-e-2  -> needs OPENAI_API_KEY
+  - Google    (gemini):  Imagen 4 / Nano Banana 2          -> needs GEMINI_API_KEY
+
+Video / Music / TTS / Analyze are Gemini-only -> need GEMINI_API_KEY.
+
+API keys are read from environment variables. Do NOT hardcode keys here.
 """
 
 import argparse
@@ -15,8 +22,13 @@ import urllib.error
 import mimetypes
 from pathlib import Path
 
+# Gemini (Google)
 API_KEY = os.environ.get("GEMINI_API_KEY", "")
 BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
+
+# OpenAI
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+OPENAI_BASE_URL = "https://api.openai.com/v1"
 
 
 # ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -61,6 +73,32 @@ def save_binary(data: bytes, output: str, index: int = 0, total: int = 1) -> str
     size_kb = len(data) / 1024
     print(f"  Saved: {filepath} ({size_kb:.0f} KB)")
     return str(filepath)
+
+
+def api_request_openai(endpoint: str, payload: dict, timeout: int = 300) -> dict:
+    """POST to OpenAI API with Bearer authentication. Reads OPENAI_API_KEY from env."""
+    if not OPENAI_API_KEY:
+        raise RuntimeError(
+            "OPENAI_API_KEY environment variable not set. "
+            "Add it to ~/.claude/settings.json under the 'env' block, or "
+            "`export OPENAI_API_KEY=sk-...` in your shell."
+        )
+    url = f"{OPENAI_BASE_URL}{endpoint}"
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8") if e.fp else ""
+        raise RuntimeError(f"OpenAI API error {e.code}: {error_body}")
 
 
 # ─── IMAGE GENERATION ──────────────────────────────────────────────────────────
@@ -121,6 +159,80 @@ def cmd_generate_image(prompt: str, output: str, size: str, count: int, model: s
                 if "text" in p:
                     print(f"  API text: {p['text']}", file=sys.stderr)
         print("Error: No images generated.", file=sys.stderr)
+        sys.exit(1)
+
+    return saved
+
+
+# ─── IMAGE GENERATION (OpenAI) ─────────────────────────────────────────────────
+
+def cmd_generate_image_openai(prompt: str, output: str, size: str, count: int,
+                              model: str, quality: str, style: str):
+    """Generate images using OpenAI Images API.
+
+    Models supported:
+      - gpt-image-1 (default): newest model, best at text-in-image; sizes
+        1024x1024, 1024x1536, 1536x1024; quality low|medium|high.
+      - dall-e-3: photo-realistic, sizes 1024x1024, 1024x1792, 1792x1024;
+        quality standard|hd; style vivid|natural; n is forced to 1.
+      - dall-e-2: cheap legacy, 256x256, 512x512, 1024x1024; quality ignored.
+    """
+    print(f"Generating image (OpenAI)...")
+    print(f"  Prompt: {prompt[:100]}{'...' if len(prompt) > 100 else ''}")
+    print(f"  Size: {size}")
+    print(f"  Model: {model}")
+    print(f"  Quality: {quality}")
+    if model == "dall-e-3":
+        print(f"  Style: {style}")
+    print(f"  Count: {count}")
+    print()
+
+    payload = {
+        "model": model,
+        "prompt": prompt,
+        "n": count,
+        "size": size,
+    }
+
+    if model == "dall-e-3":
+        # DALL-E 3 only supports n=1 per request
+        if count > 1:
+            print(f"  Note: dall-e-3 supports n=1 only; clamping count to 1.")
+            payload["n"] = 1
+        payload["quality"] = quality if quality in ("standard", "hd") else "standard"
+        payload["style"] = style if style in ("vivid", "natural") else "vivid"
+        payload["response_format"] = "b64_json"
+    elif model == "gpt-image-1":
+        payload["quality"] = quality if quality in ("low", "medium", "high") else "medium"
+        # gpt-image-1 always returns b64; no response_format flag needed.
+    elif model == "dall-e-2":
+        payload["response_format"] = "b64_json"
+    else:
+        # Unknown model — pass through; OpenAI will validate.
+        payload["response_format"] = "b64_json"
+
+    try:
+        data = api_request_openai("/images/generations", payload, timeout=300)
+    except RuntimeError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    items = data.get("data", [])
+    if not items:
+        print(f"Error: no images returned. Response: "
+              f"{json.dumps(data, indent=2)[:500]}", file=sys.stderr)
+        sys.exit(1)
+
+    saved = []
+    for i, img in enumerate(items):
+        b64 = img.get("b64_json", "")
+        if not b64:
+            print(f"  Warning: no b64 data in response item {i}", file=sys.stderr)
+            continue
+        saved.append(save_binary(base64.b64decode(b64), output, i, len(items)))
+
+    if not saved:
+        print("Error: no image bytes extracted from response.", file=sys.stderr)
         sys.exit(1)
 
     return saved
@@ -563,18 +675,30 @@ If no characters, describe a narrator voice and write a short narration for the 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Gemini Creative Studio — Image, Video, Music, Speech, Analysis",
+        description="Creative AI Studio — Image (OpenAI / Gemini), Video, Music, Speech, Analysis",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Commands:
-  generate (g)  Generate image from text prompt (Nano Banana 2 / Imagen 4)
+  generate (g)  Generate image (OpenAI gpt-image-1 default; Gemini Imagen 4 / Nano Banana 2 via --provider gemini)
   video (v)     Generate video from text or image (Veo 3.1)
   music (m)     Generate music from text prompt (Lyria 3)
   tts (t)       Text-to-speech (Gemini TTS)
   analyze (a)   Analyze image → extract prompts for all tools
 
+Environment variables:
+  OPENAI_API_KEY   required for `generate` with --provider openai (default)
+  GEMINI_API_KEY   required for `generate --provider gemini`, video, music, tts, analyze
+
 Examples:
+  # OpenAI (default)
   %(prog)s generate "A cute robot" --output robot.png
+  %(prog)s generate "Photorealistic Bridgetown skyline" -m dall-e-3 -s 1792x1024 --quality hd
+  %(prog)s generate "Constellation 256-QAM diagram" -m gpt-image-1 --quality high
+
+  # Gemini
+  %(prog)s generate "A cute robot, anime style" --provider gemini --output robot.png
+
+  # Video / Music / TTS / Analyze (all Gemini)
   %(prog)s video "A robot walking through wasteland" --output scene.mp4
   %(prog)s video "Robot discovers a plant" --image ref.png --output scene.mp4
   %(prog)s music "Hopeful orchestral, 90 BPM, D major" --output theme.wav
@@ -589,9 +713,24 @@ Examples:
     p_gen = subparsers.add_parser("generate", aliases=["gen", "g"], help="Generate image")
     p_gen.add_argument("prompt", help="Text prompt")
     p_gen.add_argument("--output", "-o", default="./generated_image.png")
-    p_gen.add_argument("--size", "-s", default="1024x1024", help="1024x1024, 1536x1024, 1024x1536")
+    p_gen.add_argument("--size", "-s", default="1024x1024",
+                       help="OpenAI: 1024x1024, 1024x1536, 1536x1024 (gpt-image-1) | "
+                            "1024x1024, 1024x1792, 1792x1024 (dall-e-3). "
+                            "Gemini: 1024x1024, 1536x1024, 1024x1536")
     p_gen.add_argument("--count", "-n", type=int, default=1, choices=[1, 2, 3, 4])
-    p_gen.add_argument("--model", "-m", default="imagen-4.0-generate-001")
+    p_gen.add_argument("--provider", "-p", default="openai",
+                       choices=["openai", "gemini"],
+                       help="Image provider (default: openai)")
+    p_gen.add_argument("--model", "-m", default=None,
+                       help="Model to use. Defaults: openai=gpt-image-1, "
+                            "gemini=imagen-4.0-generate-001. "
+                            "Other OpenAI: dall-e-3, dall-e-2.")
+    p_gen.add_argument("--quality", default=None,
+                       help="OpenAI only. gpt-image-1: low|medium|high (default medium). "
+                            "dall-e-3: standard|hd (default standard).")
+    p_gen.add_argument("--style", default="vivid",
+                       choices=["vivid", "natural"],
+                       help="OpenAI dall-e-3 only (default: vivid).")
 
     # ── Generate Video ──
     p_vid = subparsers.add_parser("video", aliases=["vid", "v"], help="Generate video")
@@ -631,26 +770,51 @@ Examples:
         parser.print_help()
         sys.exit(0)
 
-    if not API_KEY:
-        print("Error: GEMINI_API_KEY environment variable not set.", file=sys.stderr)
-        print("Set it with: export GEMINI_API_KEY='your-key-here'", file=sys.stderr)
-        print("Or add to Claude Code settings: /update-config set GEMINI_API_KEY=your-key", file=sys.stderr)
-        sys.exit(1)
+    def require_gemini_key():
+        if not API_KEY:
+            print("Error: GEMINI_API_KEY environment variable not set.", file=sys.stderr)
+            print("Add it to ~/.claude/settings.json under 'env', or "
+                  "`export GEMINI_API_KEY=...` in your shell.", file=sys.stderr)
+            sys.exit(1)
+
+    def require_openai_key():
+        if not OPENAI_API_KEY:
+            print("Error: OPENAI_API_KEY environment variable not set.", file=sys.stderr)
+            print("Add it to ~/.claude/settings.json under 'env', or "
+                  "`export OPENAI_API_KEY=sk-...` in your shell.", file=sys.stderr)
+            sys.exit(1)
 
     if args.command in ("generate", "gen", "g"):
-        saved = cmd_generate_image(args.prompt, args.output, args.size, args.count, args.model)
+        if args.provider == "openai":
+            require_openai_key()
+            model = args.model or "gpt-image-1"
+            quality = args.quality or ("standard" if model == "dall-e-3" else "medium")
+            saved = cmd_generate_image_openai(
+                args.prompt, args.output, args.size, args.count,
+                model, quality, args.style,
+            )
+        else:  # gemini
+            require_gemini_key()
+            model = args.model or "imagen-4.0-generate-001"
+            saved = cmd_generate_image(
+                args.prompt, args.output, args.size, args.count, model,
+            )
         print(f"\nDone! {len(saved)} image(s) generated.")
 
     elif args.command in ("video", "vid", "v"):
+        require_gemini_key()
         cmd_generate_video(args.prompt, args.output, args.model, args.duration, args.image)
 
     elif args.command in ("music", "mus", "m"):
+        require_gemini_key()
         cmd_generate_music(args.prompt, args.output, args.model, args.duration)
 
     elif args.command in ("tts", "t"):
+        require_gemini_key()
         cmd_tts(args.text, args.output, args.model, args.voice)
 
     elif args.command in ("analyze", "ana", "a"):
+        require_gemini_key()
         cmd_analyze(args.image, args.target, args.output)
 
 
