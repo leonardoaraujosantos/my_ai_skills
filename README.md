@@ -28,17 +28,19 @@ ln -s /path/to/my_ai_skills/youtube-playlist ~/.claude/skills/youtube-playlist
 | [convert-to-md](#convert-to-md) | Convert PDF/PPTX to Markdown | `pymupdf`, `python-pptx` |
 | [coolify](#coolify) | Manage Coolify deployments & env vars via API | None |
 | [csv-tools](#csv-tools) | CSV manipulation & conversion | None |
+| [elevenlabs](#elevenlabs) | TTS, SFX, voice conversion, music & audio isolation | `ELEVENLABS_API_KEY` env var |
 | [generate-image](#generate-image) | AI media studio: images, video, music, TTS, analysis | `GEMINI_API_KEY` env var |
-| [gws](#gws) | Google Workspace CLI integration | `gws` (npm) |
+| [gws](#gws) | Google Workspace CLI integration | `@googleworkspace/cli` (npm) |
 | [image-tools](#image-tools) | Image manipulation | `Pillow` |
 | [journal](#journal) | Daily journaling to Obsidian | None |
 | [json-tools](#json-tools) | JSON manipulation & queries | None (optional: `pyyaml`) |
 | [mcp-client](#mcp-client) | Test, explore & manage MCP servers | `mcp` (pip) |
 | [mermaid](#mermaid) | Create cross-platform Mermaid diagrams | None |
+| [notebooklm](#notebooklm) | Full Google NotebookLM API: notebooks, sources, artifacts | `notebooklm-py` (pip) |
 | [obsidian](#obsidian) | Obsidian vault management | Obsidian CLI |
 | [pdf-tools](#pdf-tools) | PDF manipulation | `pypdf` |
 | [pg-client](#pg-client) | PostgreSQL client with graph & RLS support | `psycopg2` |
-| [study-this](#study-this) | Process study references & manage Obsidian study notes | `gws` (npm), `yt-dlp` |
+| [study-this](#study-this) | Process study references & manage Obsidian study notes | `@googleworkspace/cli` (npm), `yt-dlp` |
 | [sync-skills](#sync-skills) | Sync skills to GitHub repo | None |
 | [youtube-playlist](#youtube-playlist) | YouTube playlist & CC extraction | `yt-dlp`, `youtube-transcript-api` |
 
@@ -293,6 +295,57 @@ csv-tools/
 
 ---
 
+## elevenlabs
+
+Full audio generation suite powered by the ElevenLabs API: text-to-speech, sound effects, speech-to-speech voice conversion, music composition, and audio isolation (background-noise removal).
+
+### Installation
+
+No pip dependencies — the CLI uses only the Python stdlib. It only needs an API key:
+
+```bash
+export ELEVENLABS_API_KEY="your-elevenlabs-api-key"
+```
+
+The skill reads the key from `os.environ`; nothing is hardcoded.
+
+### Usage
+
+```bash
+SKILL_DIR="$HOME/.claude/skills/elevenlabs"
+
+# Text-to-Speech
+python3 "$SKILL_DIR/elevenlabs_cli.py" tts "Hello world" -o speech.mp3 -v JBFqnCBsd6RMkjVDRZzb
+
+# Sound effects
+python3 "$SKILL_DIR/elevenlabs_cli.py" sfx "footsteps on gravel, rain" -o sfx.mp3
+
+# Speech-to-Speech (voice conversion)
+python3 "$SKILL_DIR/elevenlabs_cli.py" sts input.mp3 -v <voice_id> -o converted.mp3
+
+# Music composition
+python3 "$SKILL_DIR/elevenlabs_cli.py" music "lo-fi hip hop, 80 BPM, mellow" -o track.mp3
+
+# Audio isolation (strip background noise)
+python3 "$SKILL_DIR/elevenlabs_cli.py" isolate noisy.mp3 -o clean.mp3
+
+# List available voices / models
+python3 "$SKILL_DIR/elevenlabs_cli.py" voices
+python3 "$SKILL_DIR/elevenlabs_cli.py" models
+```
+
+> Note: the API key must include the scopes for the operations you use (e.g. `text_to_speech`). A narrowly-scoped key still works for TTS/SFX even if it lacks `user_read`.
+
+### Files
+
+```
+elevenlabs/
+├── SKILL.md
+└── elevenlabs_cli.py
+```
+
+---
+
 ## generate-image
 
 Full AI media generation suite powered by Google Gemini API. Generate images, videos, music, speech, or analyze images to extract prompts for all tools.
@@ -432,9 +485,11 @@ Interact with Google Workspace (Gmail, Calendar, Drive, Sheets, Docs, Tasks) usi
 ### Installation
 
 ```bash
-npm install -g gws
+npm install -g @googleworkspace/cli   # provides the `gws` binary
 gws auth login
 ```
+
+> Note: install the official `@googleworkspace/cli` package. The bare npm name `gws` is an unrelated package (an E2E testing tool) and will NOT provide the Google Workspace commands.
 
 ### Usage
 
@@ -782,6 +837,90 @@ When invoked with `/mermaid fix <file>`, the skill scans all Mermaid blocks in t
 
 ```
 mermaid/
+└── SKILL.md
+```
+
+---
+
+## notebooklm
+
+Complete programmatic access to Google NotebookLM — including capabilities not exposed in the web UI. Create notebooks, add sources (URLs, YouTube, PDFs, audio, video, images), chat with content, generate all artifact types (podcast, video, slide deck, report, quiz, flashcards, mind map, data table, infographic), and download results in multiple formats.
+
+The skill drives the `notebooklm` CLI provided by the `notebooklm-py` Python package.
+
+### Installation
+
+**From PyPI (recommended):**
+
+```bash
+pip install notebooklm-py
+```
+
+**From GitHub (pin to the latest release tag — NOT `main`):**
+
+```bash
+LATEST_TAG=$(curl -s https://api.github.com/repos/teng-lin/notebooklm-py/releases/latest | grep '"tag_name"' | cut -d'"' -f4)
+pip install "git+https://github.com/teng-lin/notebooklm-py@${LATEST_TAG}"
+```
+
+> Requires Python 3.10+. Do NOT install from the `main` branch — it may contain unreleased/unstable changes. Use PyPI or a specific release tag.
+
+Verify the CLI:
+
+```bash
+notebooklm --version
+```
+
+### Authentication
+
+NotebookLM uses Google OAuth via the browser:
+
+```bash
+notebooklm login          # Opens a browser for Google sign-in
+notebooklm auth check     # Diagnose auth state
+notebooklm list           # Verify it works (returns your notebooks)
+```
+
+If commands fail with auth errors, re-run `notebooklm login`.
+
+#### CI / multiple accounts / parallel agents
+
+| Variable | Purpose |
+|----------|---------|
+| `NOTEBOOKLM_HOME` | Custom config directory (default: `~/.notebooklm`). Use a unique dir per parallel agent. |
+| `NOTEBOOKLM_AUTH_JSON` | Inline auth JSON (`storage_state.json` contents) — no file writes; ideal for CI secrets. |
+
+### Usage
+
+```bash
+# Notebooks
+notebooklm create "Research: AI safety"
+notebooklm list
+
+# Add sources
+notebooklm source add "https://example.com/article"
+notebooklm source add ./paper.pdf
+notebooklm source add "https://youtube.com/watch?v=VIDEO_ID"
+
+# Chat
+notebooklm ask "Summarize the key arguments"
+
+# Generate artifacts
+notebooklm generate audio "Focus on practical takeaways"
+notebooklm generate report --format briefing-doc
+notebooklm generate mind-map
+
+# Download
+notebooklm download audio ./podcast.mp3
+notebooklm download report ./report.md
+```
+
+See the skill's `SKILL.md` for the full command reference, autonomy rules, and subagent patterns for long-running generation.
+
+### Files
+
+```
+notebooklm/
 └── SKILL.md
 ```
 
