@@ -7,12 +7,14 @@ When creating git commits:
 - Write commit messages as if written by the developer
 - Keep commit messages concise and technical
 - Focus on what changed and why
+- Be sure to create regression tests for bugs found
 
 ## Code Style
 
 - Write clean, readable code
 - Follow existing project conventions
 - Add comments only when logic is not self-evident
+- Focus on having your code easy to maintain and extend.
 
 ## Verification
 
