@@ -3,18 +3,22 @@
 ## Git Commits
 
 When creating git commits:
+
 - Do NOT include "Co-Authored-By: Claude" or any mention of Claude or AI in commit messages
 - Write commit messages as if written by the developer
 - Keep commit messages concise and technical
 - Focus on what changed and why
-- Be sure to create regression tests for bugs found
+- Dont mention Claude even when you create PRs.
 
 ## Code Style
 
 - Write clean, readable code
 - Follow existing project conventions
 - Add comments only when logic is not self-evident
-- Focus on having your code easy to maintain and extend.
+- The code need to be maintainable by humans and agents
+- All the PRs need to have a good, descriptive message.
+- Any bug found need to have a regression test added on the PR that solve the issue
+- Before claims like it was not working before, do check against your changes
 
 ## Verification
 
