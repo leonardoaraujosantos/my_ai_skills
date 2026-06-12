@@ -12,18 +12,22 @@ Manage Coolify applications, deployments, environment variables, and services th
 
 The skill supports multiple Coolify servers via environment variables:
 
-| Server    | URL env var        | Token env var        |
-|-----------|--------------------|----------------------|
-| sandbox   | `COOLIFY_URL`      | `COOLIFY_TOKEN`      |
-| prd       | `COOLIFY_PRD_URL`  | `COOLIFY_PRD_TOKEN`  |
+| Server    | URL env var              | Token env var              | `--server` |
+|-----------|--------------------------|----------------------------|------------|
+| sandbox   | `COOLIFY_URL`            | `COOLIFY_TOKEN`            | `sandbox` (default) |
+| prd       | `COOLIFY_PRD_URL`        | `COOLIFY_PRD_TOKEN`        | `prd`      |
+| cyberdyne | `COOLIFY_CYBERDYNE_URL`  | `COOLIFY_CYBERDYNE_TOKEN`  | `cyberdyne` |
 
-Check if they're set:
+The `cyberdyne` server is `https://coolify.cyberdynecorp.ai` — use it for any
+CyberSpace / Cyberdyne deployment (`--server cyberdyne`).
+
+Check what's set (don't assume from this table — env may add more):
 
 ```bash
-echo "Sandbox URL: ${COOLIFY_URL:-NOT SET}"
-echo "Sandbox Token: ${COOLIFY_TOKEN:+SET (hidden)}"
-echo "Prd URL: ${COOLIFY_PRD_URL:-NOT SET}"
-echo "Prd Token: ${COOLIFY_PRD_TOKEN:+SET (hidden)}"
+env | grep -i '^COOLIFY_.*URL=' | sed -E 's#=(https?://[^/]+).*#=\1#'
+for v in COOLIFY_TOKEN COOLIFY_PRD_TOKEN COOLIFY_CYBERDYNE_TOKEN; do
+  echo "$v: ${!v:+SET}"
+done
 ```
 
 ## CLI Tool
@@ -37,10 +41,11 @@ python3 ~/.claude/skills/coolify/coolify_cli.py <command> [args...]
 
 **Target a specific server with `--server`:**
 ```bash
-python3 ~/.claude/skills/coolify/coolify_cli.py --server prd <command> [args...]
+python3 ~/.claude/skills/coolify/coolify_cli.py --server cyberdyne <command> [args...]
 ```
 
-Available servers: `sandbox` (default), `prd`.
+Available servers: `sandbox` (default), `prd`, `cyberdyne`. The authoritative
+list lives in `SERVERS` in `coolify_cli.py` — check there if unsure.
 
 For brevity in this doc, we'll write `coolify_cli <command>` but always use the full path.
 
