@@ -1,0 +1,11 @@
+{
+  "name": "cogcom-ts",
+  "private": true,
+  "description": "Pinned toolchain for cognitive-complexity scoring of JS/TS (used by cogcom.py).",
+  "dependencies": {
+    "eslint": "^9.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint-plugin-sonarjs": "^3.0.0",
+    "typescript": "^5.0.0"
+  }
+}
