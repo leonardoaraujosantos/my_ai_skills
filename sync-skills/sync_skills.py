@@ -36,6 +36,42 @@ REPO_LOCAL = Path("/tmp/my_ai_skills")
 # Skills to sync (exclude this skill itself to avoid recursion)
 EXCLUDE_SKILLS = {"sync-skills"}
 
+# File patterns that must never be pushed to the public skills repo.
+# These typically contain secrets, credentials, tokens, or local-only config.
+EXCLUDE_FILE_PATTERNS = {
+    "tokens.json",
+    "profiles.json",
+    "credentials.json",
+    "secrets.json",
+    "servers.json",
+    ".env",
+    ".env.local",
+    ".env.production",
+    "storage_state.json",
+    "auth.json",
+}
+
+# Suffixes/prefixes for files to always skip
+EXCLUDE_FILE_SUFFIXES = (".pyc", ".pyo")
+EXCLUDE_DIR_NAMES = {
+    "__pycache__", ".git", ".DS_Store",
+    "node_modules", ".complexipy_cache", ".pytest_cache", ".mypy_cache",
+}
+
+
+def _ignore_sensitive(src, names):
+    """shutil.copytree ignore callable: drop sensitive files/dirs."""
+    ignored = set()
+    for name in names:
+        if name in EXCLUDE_FILE_PATTERNS:
+            print(f"  [skip secret] {src}/{name}")
+            ignored.add(name)
+        elif name in EXCLUDE_DIR_NAMES:
+            ignored.add(name)
+        elif name.endswith(EXCLUDE_FILE_SUFFIXES):
+            ignored.add(name)
+    return ignored
+
 
 def run_cmd(cmd, cwd=None, check=True):
     """Run a shell command and return output."""
@@ -88,9 +124,14 @@ def sync_skill(skill_name, dry_run=False):
 
     if dry_run:
         print(f"Would sync: {skill_name}")
-        for item in source.rglob("*"):
-            if item.is_file():
-                rel_path = item.relative_to(source)
+        for root, dirs, files in os.walk(source):
+            dirs[:] = [d for d in dirs if d not in EXCLUDE_DIR_NAMES]
+            for name in files:
+                if (name in EXCLUDE_FILE_PATTERNS
+                        or name in EXCLUDE_DIR_NAMES
+                        or name.endswith(EXCLUDE_FILE_SUFFIXES)):
+                    continue
+                rel_path = Path(root, name).relative_to(source)
                 print(f"  - {rel_path}")
         return True
 
@@ -98,8 +139,8 @@ def sync_skill(skill_name, dry_run=False):
     if dest.exists():
         shutil.rmtree(dest)
 
-    # Copy skill
-    shutil.copytree(source, dest)
+    # Copy skill, excluding sensitive files
+    shutil.copytree(source, dest, ignore=_ignore_sensitive)
     print(f"Synced: {skill_name}")
     return True
 
