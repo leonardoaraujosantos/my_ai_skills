@@ -33,13 +33,16 @@ ln -s /path/to/my_ai_skills/youtube-playlist ~/.claude/skills/youtube-playlist
 | [image-tools](#image-tools) | Image manipulation | `Pillow` |
 | [journal](#journal) | Daily journaling to Obsidian | None |
 | [json-tools](#json-tools) | JSON manipulation & queries | None (optional: `pyyaml`) |
+| [markitdown-hook](#markitdown-hook) | Auto-convert PDF/Office docs to Markdown on Read (token saver) | `markitdown[all]` (auto-installed) |
 | [mcp-client](#mcp-client) | Test, explore & manage MCP servers | `mcp` (pip) |
 | [mermaid](#mermaid) | Create cross-platform Mermaid diagrams | None |
 | [obsidian](#obsidian) | Obsidian vault management | Obsidian CLI |
 | [pdf-tools](#pdf-tools) | PDF manipulation | `pypdf` |
+| [pentest](#pentest) | Authorized defensive security testing — 40 vuln playbooks + recon + Shannon | Per-playbook CLI tools (curl, ffuf, nuclei…); Docker for Shannon |
 | [pg-client](#pg-client) | PostgreSQL client with graph & RLS support | `psycopg2` |
 | [study-this](#study-this) | Process study references & manage Obsidian study notes | `gws` (npm), `yt-dlp` |
 | [sync-skills](#sync-skills) | Sync skills to GitHub repo | None |
+| [visual-explainer](#visual-explainer) | Generate self-contained HTML diagrams, slide decks & dashboards | None (optional: `surf-cli` for AI images) |
 | [youtube-playlist](#youtube-playlist) | YouTube playlist & CC extraction | `yt-dlp`, `youtube-transcript-api` |
 
 ---
@@ -736,6 +739,27 @@ mcp-client/
 
 ---
 
+## markitdown-hook
+
+Install a harness-level `PreToolUse(Read)` hook that auto-converts binary documents (PDF, DOCX, PPTX, XLSX, EPub) to Markdown **before** Claude reads them — saving tokens. `Read` renders PDF pages as images at high token cost; the hook intercepts the read, converts the file locally with `markitdown`, and redirects Claude to a sibling `.converted.md`. Complements the on-demand `convert-to-md` / `pdf-tools` skills by making conversion automatic on every read.
+
+### Installation
+
+```bash
+bash ~/.claude/skills/markitdown-hook/scripts/install.sh
+# then restart Claude Code and run /hooks to confirm
+```
+
+Idempotent. Creates a pinned `markitdown[all]` venv (Python 3.10–3.13), copies the hook to `~/.claude/hooks/`, and safe-merges a `PreToolUse(Read)` entry into `~/.claude/settings.json`.
+
+### Notes
+
+- Documents only — images/audio are left on normal `Read`. Cached, size-guarded (>50 MB skipped), never clobbers user files, and skips sensitive paths (`.ssh`, `.aws`, `.env`, …).
+- Dragged/pasted files bypass the hook (Claude Code attaches them before any hook runs) — ask "read `<path>`" for those.
+- Treats converted text as untrusted data, not instructions (prompt-injection aware).
+
+---
+
 ## mermaid
 
 Create Mermaid diagrams that render correctly across Obsidian, GitHub, and Notion. Enforces cross-platform compatibility rules and avoids common rendering bugs.
@@ -893,6 +917,35 @@ python3 "$SKILL/pdf_tools.py" decrypt protected.pdf --password secret -o unlocke
 pdf-tools/
 ├── SKILL.md
 └── pdf_tools.py
+```
+
+---
+
+## pentest
+
+Authorized **defensive** security testing for web apps, APIs, cloud, and CI/CD. A scope-gated orchestrator (`SKILL.md`) over **40 vulnerability playbooks** plus reconnaissance, with an optional [Shannon](https://github.com/KeygraphHQ/shannon) autonomous-pentester (MCP) integration. Adapted from the [vakaobr/claude-code-ai-development-workflow](https://github.com/vakaobr/claude-code-ai-development-workflow) security library.
+
+> ⚠️ **Authorization required.** Every run reads `security-scope.yaml` and **refuses to emit test traffic** if it is missing or contains only placeholder assets. Test only systems you own or are explicitly authorized to test. Production defaults to passive-only.
+
+### What's inside
+
+- **`SKILL.md`** — orchestrator: authorization gate, recon→hunter dispatch map, cross-skill chains, "No Exploit, No Report" standard.
+- **`hunters/*.md`** — 40 flattened playbooks: `idor`, `bola-bfla`, `sqli`, `xss`, `dom-xss`, `ssrf`, `ssrf-cloud-metadata`, `jwt`, `oauth-oidc`, `ssti`, `xxe`, `command-injection`, `path-traversal`, `deserialization`, `csrf`, `cors-misconfig`, `clickjacking`, `open-redirect`, `graphql`, `mass-assignment`, `excessive-data-exposure`, `rate-limit`, `business-logic`, `crypto-flaw`, `aws-iam`, `s3-misconfig`, `container`, `gitlab-cicd`, `secrets-in-code`, `subdomain-takeover`, plus recon (`web-check-recon`, passive/active web recon, `api-recon`, `auth-flow-mapper`, `attack-surface-mapper`).
+- **`security-scope.yaml`** — rules-of-engagement template (authorized assets, testing levels, technique restrictions).
+- **`_shared/`** — finding schema, tool profiles (5 allowlists; aggressive tools like sqlmap/metasploit/hydra/nikto are forbidden by design), validation checklist.
+- **`recon/web-check/`** — self-hosted [web-check](https://github.com/lissy93/web-check) container + scripts for a fast first-pass.
+- **`shannon/shannon-mcp-wrapper.sh`** — launches Shannon as an MCP server, reading your Claude Code OAuth token dynamically (no API key management). Staging/localhost only.
+- **`scripts/validate-skills.sh`** — structural validator (sections, scope reference, forbidden-tool catch). Currently 40 playbooks, 0 errors.
+
+### Usage
+
+```bash
+# 1. Copy the template into your target project and populate it with real assets
+cp ~/.claude/skills/pentest/security-scope.yaml ./security-scope.yaml
+
+# 2. Ask Claude, e.g.:
+#    "pentest the staging API at api.staging.internal — it's in security-scope.yaml"
+# Findings append to ./security-findings/SECURITY_AUDIT.md
 ```
 
 ---
@@ -1078,6 +1131,21 @@ sync-skills/
 ├── SKILL.md
 └── sync_skills.py
 ```
+
+---
+
+## visual-explainer
+
+Generate beautiful, self-contained HTML pages that visually explain systems, code changes, plans, and data — Mermaid diagrams with zoom/pan, KPI dashboards, comparison tables, and magazine-quality slide decks, with anti-AI-slop guardrails. By [nicobailon](https://github.com/nicobailon/visual-explainer). Pairs naturally with the Artifact workflow and is useful for architecture overviews, diff reviews, and presentation decks.
+
+### Usage
+
+Ask for any visual explanation — "make a diagram of this architecture", "turn this into a slide deck", "render this as a styled HTML table". The skill triggers proactively on complex tables (4+ rows or 3+ columns).
+
+### Notes
+
+- Output is a single self-contained `.html` file (inlined CSS/JS) — viewable in any browser.
+- `references/` holds CSS patterns, library notes, and slide patterns; `templates/` holds reference HTML; `scripts/share.sh` deploys to Vercel for a public URL.
 
 ---
 
