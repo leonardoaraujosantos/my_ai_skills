@@ -923,14 +923,16 @@ pdf-tools/
 
 ## pentest
 
-Authorized **defensive** security testing for web apps, APIs, cloud, and CI/CD. A scope-gated orchestrator (`SKILL.md`) over **40 vulnerability playbooks** plus reconnaissance, with an optional [Shannon](https://github.com/KeygraphHQ/shannon) autonomous-pentester (MCP) integration. Adapted from the [vakaobr/claude-code-ai-development-workflow](https://github.com/vakaobr/claude-code-ai-development-workflow) security library.
+Authorized **defensive** security testing for web apps, APIs, cloud, and CI/CD. A scope-gated orchestrator (`SKILL.md`) over **41 vulnerability/recon playbooks**, with an optional [Shannon](https://github.com/KeygraphHQ/shannon) autonomous-pentester (MCP) integration. Adapted from the [vakaobr/claude-code-ai-development-workflow](https://github.com/vakaobr/claude-code-ai-development-workflow) security library.
+
+Supports **black-box** (only a backend or web URL — no source, often no creds), **gray-box**, and **white-box** engagements. For black-box, declare `engagement_type: black_box` in the scope file and the skill starts at the `blackbox-recon` runbook: it classifies web-vs-API, fingerprints the stack from responses, discovers endpoints/parameters, maps the auth surface (self-registering test accounts only if authorized), and writes the inventory the hunters consume — then states its coverage blind spots honestly.
 
 > ⚠️ **Authorization required.** Every run reads `security-scope.yaml` and **refuses to emit test traffic** if it is missing or contains only placeholder assets. Test only systems you own or are explicitly authorized to test. Production defaults to passive-only.
 
 ### What's inside
 
 - **`SKILL.md`** — orchestrator: authorization gate, recon→hunter dispatch map, cross-skill chains, "No Exploit, No Report" standard.
-- **`hunters/*.md`** — 40 flattened playbooks: `idor`, `bola-bfla`, `sqli`, `xss`, `dom-xss`, `ssrf`, `ssrf-cloud-metadata`, `jwt`, `oauth-oidc`, `ssti`, `xxe`, `command-injection`, `path-traversal`, `deserialization`, `csrf`, `cors-misconfig`, `clickjacking`, `open-redirect`, `graphql`, `mass-assignment`, `excessive-data-exposure`, `rate-limit`, `business-logic`, `crypto-flaw`, `aws-iam`, `s3-misconfig`, `container`, `gitlab-cicd`, `secrets-in-code`, `subdomain-takeover`, plus recon (`web-check-recon`, passive/active web recon, `api-recon`, `auth-flow-mapper`, `attack-surface-mapper`).
+- **`hunters/*.md`** — flattened playbooks incl. `blackbox-recon` (from-URL black-box runbook), `idor`, `bola-bfla`, `sqli`, `xss`, `dom-xss`, `ssrf`, `ssrf-cloud-metadata`, `jwt`, `oauth-oidc`, `ssti`, `xxe`, `command-injection`, `path-traversal`, `deserialization`, `csrf`, `cors-misconfig`, `clickjacking`, `open-redirect`, `graphql`, `mass-assignment`, `excessive-data-exposure`, `rate-limit`, `business-logic`, `crypto-flaw`, `aws-iam`, `s3-misconfig`, `container`, `gitlab-cicd`, `secrets-in-code`, `subdomain-takeover`, plus recon (`web-check-recon`, passive/active web recon, `api-recon`, `auth-flow-mapper`, `attack-surface-mapper`).
 - **`security-scope.yaml`** — rules-of-engagement template (authorized assets, testing levels, technique restrictions).
 - **`_shared/`** — finding schema, tool profiles (5 allowlists; aggressive tools like sqlmap/metasploit/hydra/nikto are forbidden by design), validation checklist.
 - **`recon/web-check/`** — self-hosted [web-check](https://github.com/lissy93/web-check) container + scripts for a fast first-pass.
