@@ -1,0 +1,7 @@
+# Dependencies needed to run the repo's regression test suite in CI.
+pytest>=7,<9
+psycopg2-binary>=2.9
+Pillow>=9.1
+python-pptx>=0.6
+pypdf[image]>=4
+PyMuPDF>=1.24
