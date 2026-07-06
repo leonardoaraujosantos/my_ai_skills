@@ -1,6 +1,6 @@
 ---
 name: obsidian
-description: "Interact with Obsidian vault 'Leo Knowledge'. Search, read, create, append notes. Sync between GitHub repo, iCloud, and other devices. Covers Obsidian Flavored Markdown (.md), Bases (.base), and JSON Canvas (.canvas). Use when user says 'pull from iCloud', 'sync vault', 'push vault', 'search vault', or any vault operation."
+description: "Interact with an Obsidian vault (configured via the OBSIDIAN_VAULT / OBSIDIAN_VAULT_NAME env vars). Search, read, create, append notes. Sync between GitHub repo, iCloud, and other devices. Covers Obsidian Flavored Markdown (.md), Bases (.base), and JSON Canvas (.canvas). Use when user says 'pull from iCloud', 'sync vault', 'push vault', 'search vault', or any vault operation."
 argument-hint: pull | push | sync | search <query> | [command] [options]
 ---
 
@@ -8,19 +8,32 @@ argument-hint: pull | push | sync | search <query> | [command] [options]
 
 The vault is managed via GitHub repository. All changes are made to the repo first, then synced to iCloud for other devices.
 
+## Configuration
+
+Set these once in your shell profile so every command below is portable:
+
+```bash
+export OBSIDIAN_VAULT="$HOME/path/to/your-vault"        # local git repo of the vault
+export OBSIDIAN_VAULT_NAME="YourVault"                   # vault name the Obsidian CLI expects
+export OBSIDIAN_ICLOUD="$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/$OBSIDIAN_VAULT_NAME"
+```
+
+Keep `OBSIDIAN_VAULT` free of spaces (the recipes use it unquoted); the iCloud
+path is always quoted since it contains spaces.
+
 ## Paths
 
 | Location | Path |
 |----------|------|
-| **GitHub Repo (Primary)** | `/Users/leonardoaraujo/work/leo-obsidian-vault` |
-| **iCloud (Sync Target)** | `/Users/leonardoaraujo/Library/Mobile Documents/iCloud~md~obsidian/Documents/Leo Knowledge` |
-| **GitHub URL** | https://github.com/leonardoaraujosantos/leo-obsidian-vault.git |
+| **GitHub Repo (Primary)** | `$OBSIDIAN_VAULT` |
+| **iCloud (Sync Target)** | `$OBSIDIAN_ICLOUD` |
+| **GitHub URL** | your vault's git remote |
 
 ## Obsidian CLI
 
 ```bash
 CLI="/Applications/Obsidian.app/Contents/MacOS/Obsidian"
-VAULT='vault="Leo Knowledge"'
+# Pass the vault to each command as: vault="$OBSIDIAN_VAULT_NAME"
 ```
 
 ---
@@ -59,8 +72,8 @@ Run these steps in order:
 
 ### 1. Check what changed
 ```bash
-diff -rq /Users/leonardoaraujo/work/leo-obsidian-vault \
-  "/Users/leonardoaraujo/Library/Mobile Documents/iCloud~md~obsidian/Documents/Leo Knowledge" \
+diff -rq $OBSIDIAN_VAULT \
+  "$OBSIDIAN_ICLOUD" \
   --exclude='.git' --exclude='.obsidian' --exclude='.smart-env' --exclude='.trash' --exclude='.DS_Store' 2>/dev/null | head -30
 ```
 
@@ -72,13 +85,13 @@ rsync -av --update \
   --exclude='.smart-env/' \
   --exclude='.trash/' \
   --exclude='.DS_Store' \
-  "/Users/leonardoaraujo/Library/Mobile Documents/iCloud~md~obsidian/Documents/Leo Knowledge/" \
-  /Users/leonardoaraujo/work/leo-obsidian-vault/
+  "$OBSIDIAN_ICLOUD/" \
+  $OBSIDIAN_VAULT/
 ```
 
 ### 3. Commit and push to GitHub
 ```bash
-cd /Users/leonardoaraujo/work/leo-obsidian-vault && \
+cd $OBSIDIAN_VAULT && \
 git add -A && \
 git commit -m "Sync vault from iCloud: <brief description of changes>" && \
 git push
@@ -93,7 +106,7 @@ git push
 **Triggered by:** `/obsidian push`, "push vault", "sync to iCloud"
 
 ```bash
-cd /Users/leonardoaraujo/work/leo-obsidian-vault && \
+cd $OBSIDIAN_VAULT && \
 git add -A && \
 git commit -m "Update vault: <brief description>" && \
 git push && \
@@ -104,8 +117,8 @@ rsync -av --delete \
   --exclude='.obsidian/workspace-mobile.json' \
   --exclude='.smart-env/' \
   --exclude='.trash/' \
-  /Users/leonardoaraujo/work/leo-obsidian-vault/ \
-  "/Users/leonardoaraujo/Library/Mobile Documents/iCloud~md~obsidian/Documents/Leo Knowledge/"
+  $OBSIDIAN_VAULT/ \
+  "$OBSIDIAN_ICLOUD/"
 ```
 
 ---
@@ -973,7 +986,7 @@ Many commands accept `file` or `path` to target a file. Without either, the acti
 Commands target the most recently focused vault by default. Use `vault=<name>` as the first parameter:
 
 ```bash
-obsidian vault="Leo Knowledge" search query="test"
+obsidian vault="$OBSIDIAN_VAULT_NAME" search query="test"
 ```
 
 ## Common Flags
@@ -989,16 +1002,16 @@ obsidian vault="Leo Knowledge" search query="test"
 
 | Action | Command |
 |--------|---------|
-| Search vault | `$CLI search $VAULT query="keyword"` |
-| Search with context | `$CLI search:context $VAULT query="keyword" limit=10` |
-| Read file | `$CLI read $VAULT file="NoteName"` |
-| Read by path | `$CLI read $VAULT path="Folder/Note.md"` |
-| List files | `$CLI files $VAULT` |
-| List folders | `$CLI folders $VAULT` |
-| List tags | `$CLI tags $VAULT counts` |
-| Vault info | `$CLI vault $VAULT` |
-| Recent files | `$CLI recents $VAULT` |
-| Random note | `$CLI random:read $VAULT` |
+| Search vault | `$CLI search vault="$OBSIDIAN_VAULT_NAME" query="keyword"` |
+| Search with context | `$CLI search:context vault="$OBSIDIAN_VAULT_NAME" query="keyword" limit=10` |
+| Read file | `$CLI read vault="$OBSIDIAN_VAULT_NAME" file="NoteName"` |
+| Read by path | `$CLI read vault="$OBSIDIAN_VAULT_NAME" path="Folder/Note.md"` |
+| List files | `$CLI files vault="$OBSIDIAN_VAULT_NAME"` |
+| List folders | `$CLI folders vault="$OBSIDIAN_VAULT_NAME"` |
+| List tags | `$CLI tags vault="$OBSIDIAN_VAULT_NAME" counts` |
+| Vault info | `$CLI vault vault="$OBSIDIAN_VAULT_NAME"` |
+| Recent files | `$CLI recents vault="$OBSIDIAN_VAULT_NAME"` |
+| Random note | `$CLI random:read vault="$OBSIDIAN_VAULT_NAME"` |
 
 Run `obsidian help` at any time for the full, up-to-date command list.
 
@@ -1007,28 +1020,28 @@ Run `obsidian help` at any time for the full, up-to-date command list.
 ### Using CLI (preferred for search)
 ```bash
 # Search for content
-/Applications/Obsidian.app/Contents/MacOS/Obsidian search vault="Leo Knowledge" query="kubernetes"
+/Applications/Obsidian.app/Contents/MacOS/Obsidian search vault="$OBSIDIAN_VAULT_NAME" query="kubernetes"
 
 # Search with context (shows matching lines)
-/Applications/Obsidian.app/Contents/MacOS/Obsidian search:context vault="Leo Knowledge" query="kubernetes" limit=10
+/Applications/Obsidian.app/Contents/MacOS/Obsidian search:context vault="$OBSIDIAN_VAULT_NAME" query="kubernetes" limit=10
 
 # Read by name (wikilink style)
-/Applications/Obsidian.app/Contents/MacOS/Obsidian read vault="Leo Knowledge" file="Python"
+/Applications/Obsidian.app/Contents/MacOS/Obsidian read vault="$OBSIDIAN_VAULT_NAME" file="Python"
 
 # Read by path
-/Applications/Obsidian.app/Contents/MacOS/Obsidian read vault="Leo Knowledge" path="Programming/Python.md"
+/Applications/Obsidian.app/Contents/MacOS/Obsidian read vault="$OBSIDIAN_VAULT_NAME" path="Programming/Python.md"
 ```
 
 ### Using File Tools (for editing)
 ```bash
 # Read a specific file
-Read: /Users/leonardoaraujo/work/leo-obsidian-vault/Programming/Python/Python.md
+Read: $OBSIDIAN_VAULT/Programming/Python/Python.md
 
 # Search for files by pattern
-Glob: /Users/leonardoaraujo/work/leo-obsidian-vault/**/*.md
+Glob: $OBSIDIAN_VAULT/**/*.md
 
 # Search for content
-Grep: pattern="kubernetes" path="/Users/leonardoaraujo/work/leo-obsidian-vault"
+Grep: pattern="kubernetes" path="$OBSIDIAN_VAULT"
 ```
 
 ## Writing/Creating Notes
@@ -1037,56 +1050,56 @@ Use Write or Edit tools on the **GitHub repo**, then sync:
 
 ```bash
 # Create new file
-Write: /Users/leonardoaraujo/work/leo-obsidian-vault/Programming/NewNote.md
+Write: $OBSIDIAN_VAULT/Programming/NewNote.md
 
 # Edit existing file
-Edit: /Users/leonardoaraujo/work/leo-obsidian-vault/Programming/Python/Python.md
+Edit: $OBSIDIAN_VAULT/Programming/Python/Python.md
 ```
 
 ## Links & Backlinks
 
 ```bash
 # List backlinks to a file
-/Applications/Obsidian.app/Contents/MacOS/Obsidian backlinks vault="Leo Knowledge" file="Python"
+/Applications/Obsidian.app/Contents/MacOS/Obsidian backlinks vault="$OBSIDIAN_VAULT_NAME" file="Python"
 
 # List outgoing links
-/Applications/Obsidian.app/Contents/MacOS/Obsidian links vault="Leo Knowledge" file="Python"
+/Applications/Obsidian.app/Contents/MacOS/Obsidian links vault="$OBSIDIAN_VAULT_NAME" file="Python"
 
 # Get note outline (headings)
-/Applications/Obsidian.app/Contents/MacOS/Obsidian outline vault="Leo Knowledge" file="Python"
+/Applications/Obsidian.app/Contents/MacOS/Obsidian outline vault="$OBSIDIAN_VAULT_NAME" file="Python"
 ```
 
 ## Vault Health Checks
 
 ```bash
 # Orphan notes (no incoming links)
-/Applications/Obsidian.app/Contents/MacOS/Obsidian orphans vault="Leo Knowledge"
+/Applications/Obsidian.app/Contents/MacOS/Obsidian orphans vault="$OBSIDIAN_VAULT_NAME"
 
 # Dead-end notes (no outgoing links)
-/Applications/Obsidian.app/Contents/MacOS/Obsidian deadends vault="Leo Knowledge"
+/Applications/Obsidian.app/Contents/MacOS/Obsidian deadends vault="$OBSIDIAN_VAULT_NAME"
 
 # Broken/unresolved links
-/Applications/Obsidian.app/Contents/MacOS/Obsidian unresolved vault="Leo Knowledge" verbose
-/Applications/Obsidian.app/Contents/MacOS/Obsidian unresolved vault="Leo Knowledge" counts
+/Applications/Obsidian.app/Contents/MacOS/Obsidian unresolved vault="$OBSIDIAN_VAULT_NAME" verbose
+/Applications/Obsidian.app/Contents/MacOS/Obsidian unresolved vault="$OBSIDIAN_VAULT_NAME" counts
 ```
 
 ## Tasks
 
 ```bash
 # List all tasks
-/Applications/Obsidian.app/Contents/MacOS/Obsidian tasks vault="Leo Knowledge"
+/Applications/Obsidian.app/Contents/MacOS/Obsidian tasks vault="$OBSIDIAN_VAULT_NAME"
 
 # Incomplete
-/Applications/Obsidian.app/Contents/MacOS/Obsidian tasks vault="Leo Knowledge" todo
+/Applications/Obsidian.app/Contents/MacOS/Obsidian tasks vault="$OBSIDIAN_VAULT_NAME" todo
 
 # Completed
-/Applications/Obsidian.app/Contents/MacOS/Obsidian tasks vault="Leo Knowledge" done
+/Applications/Obsidian.app/Contents/MacOS/Obsidian tasks vault="$OBSIDIAN_VAULT_NAME" done
 
 # Tasks from daily note
-/Applications/Obsidian.app/Contents/MacOS/Obsidian tasks vault="Leo Knowledge" daily
+/Applications/Obsidian.app/Contents/MacOS/Obsidian tasks vault="$OBSIDIAN_VAULT_NAME" daily
 
 # Toggle a task
-/Applications/Obsidian.app/Contents/MacOS/Obsidian task vault="Leo Knowledge" file="MyNote" line=5 toggle
+/Applications/Obsidian.app/Contents/MacOS/Obsidian task vault="$OBSIDIAN_VAULT_NAME" file="MyNote" line=5 toggle
 ```
 
 ## Daily Notes
@@ -1095,39 +1108,39 @@ Daily notes are stored in: `Journal/Daily/YYYY-MM/YYYY-MM-DD.md`
 
 ```bash
 # Read today's daily note
-/Applications/Obsidian.app/Contents/MacOS/Obsidian daily:read vault="Leo Knowledge"
+/Applications/Obsidian.app/Contents/MacOS/Obsidian daily:read vault="$OBSIDIAN_VAULT_NAME"
 
 # Append to daily note
-/Applications/Obsidian.app/Contents/MacOS/Obsidian daily:append vault="Leo Knowledge" content="- [ ] New task"
+/Applications/Obsidian.app/Contents/MacOS/Obsidian daily:append vault="$OBSIDIAN_VAULT_NAME" content="- [ ] New task"
 
 # Get daily note path
-/Applications/Obsidian.app/Contents/MacOS/Obsidian daily:path vault="Leo Knowledge"
+/Applications/Obsidian.app/Contents/MacOS/Obsidian daily:path vault="$OBSIDIAN_VAULT_NAME"
 ```
 
 ## Properties (Frontmatter) via CLI
 
 ```bash
 # List all properties in vault
-/Applications/Obsidian.app/Contents/MacOS/Obsidian properties vault="Leo Knowledge" counts
+/Applications/Obsidian.app/Contents/MacOS/Obsidian properties vault="$OBSIDIAN_VAULT_NAME" counts
 
 # Read property from file
-/Applications/Obsidian.app/Contents/MacOS/Obsidian property:read vault="Leo Knowledge" file="Python" name="tags"
+/Applications/Obsidian.app/Contents/MacOS/Obsidian property:read vault="$OBSIDIAN_VAULT_NAME" file="Python" name="tags"
 
 # Set property on file
-/Applications/Obsidian.app/Contents/MacOS/Obsidian property:set vault="Leo Knowledge" file="Python" name="status" value="reviewed"
+/Applications/Obsidian.app/Contents/MacOS/Obsidian property:set vault="$OBSIDIAN_VAULT_NAME" file="Python" name="status" value="reviewed"
 ```
 
 ## Templates
 
 ```bash
 # List templates
-/Applications/Obsidian.app/Contents/MacOS/Obsidian templates vault="Leo Knowledge"
+/Applications/Obsidian.app/Contents/MacOS/Obsidian templates vault="$OBSIDIAN_VAULT_NAME"
 
 # Read template
-/Applications/Obsidian.app/Contents/MacOS/Obsidian template:read vault="Leo Knowledge" name="Meeting"
+/Applications/Obsidian.app/Contents/MacOS/Obsidian template:read vault="$OBSIDIAN_VAULT_NAME" name="Meeting"
 
 # Create with template
-/Applications/Obsidian.app/Contents/MacOS/Obsidian create vault="Leo Knowledge" name="Meeting Notes" template="Meeting"
+/Applications/Obsidian.app/Contents/MacOS/Obsidian create vault="$OBSIDIAN_VAULT_NAME" name="Meeting Notes" template="Meeting"
 ```
 
 ## Plugin & Theme Development
@@ -1181,7 +1194,7 @@ Run `obsidian help` for additional developer commands (CDP, debugger controls).
 ### Full Sync (Repo → GitHub → iCloud)
 
 ```bash
-cd /Users/leonardoaraujo/work/leo-obsidian-vault && \
+cd $OBSIDIAN_VAULT && \
 git add -A && \
 git commit -m "Update vault" && \
 git push && \
@@ -1192,8 +1205,8 @@ rsync -av --delete \
   --exclude='.obsidian/workspace-mobile.json' \
   --exclude='.smart-env/' \
   --exclude='.trash/' \
-  /Users/leonardoaraujo/work/leo-obsidian-vault/ \
-  "/Users/leonardoaraujo/Library/Mobile Documents/iCloud~md~obsidian/Documents/Leo Knowledge/"
+  $OBSIDIAN_VAULT/ \
+  "$OBSIDIAN_ICLOUD/"
 ```
 
 ### Pull from iCloud (Mobile edits → Repo)
@@ -1204,15 +1217,15 @@ rsync -av --update \
   --exclude='.obsidian/workspace*.json' \
   --exclude='.smart-env/' \
   --exclude='.trash/' \
-  "/Users/leonardoaraujo/Library/Mobile Documents/iCloud~md~obsidian/Documents/Leo Knowledge/" \
-  /Users/leonardoaraujo/work/leo-obsidian-vault/
+  "$OBSIDIAN_ICLOUD/" \
+  $OBSIDIAN_VAULT/
 ```
 
 ### Check for Conflicts
 
 ```bash
-diff -rq /Users/leonardoaraujo/work/leo-obsidian-vault \
-  "/Users/leonardoaraujo/Library/Mobile Documents/iCloud~md~obsidian/Documents/Leo Knowledge" \
+diff -rq $OBSIDIAN_VAULT \
+  "$OBSIDIAN_ICLOUD" \
   --exclude='.git' --exclude='.obsidian' --exclude='.smart-env' --exclude='.trash' 2>/dev/null | head -20
 ```
 
@@ -1222,16 +1235,16 @@ diff -rq /Users/leonardoaraujo/work/leo-obsidian-vault \
 
 ```bash
 # Total vault size
-du -sh "/Users/leonardoaraujo/Library/Mobile Documents/iCloud~md~obsidian/Documents/Leo Knowledge"
+du -sh "$OBSIDIAN_ICLOUD"
 
 # Size by folder
-du -sh "/Users/leonardoaraujo/Library/Mobile Documents/iCloud~md~obsidian/Documents/Leo Knowledge"/* | sort -hr | head -20
+du -sh "$OBSIDIAN_ICLOUD"/* | sort -hr | head -20
 
 # Largest files
-find "/Users/leonardoaraujo/Library/Mobile Documents/iCloud~md~obsidian/Documents/Leo Knowledge" -type f -exec du -h {} + 2>/dev/null | sort -hr | head -20
+find "$OBSIDIAN_ICLOUD" -type f -exec du -h {} + 2>/dev/null | sort -hr | head -20
 
 # Clean Smart Connections cache (regenerates automatically)
-rm -rf "/Users/leonardoaraujo/Library/Mobile Documents/iCloud~md~obsidian/Documents/Leo Knowledge/.smart-env"
+rm -rf "$OBSIDIAN_ICLOUD/.smart-env"
 ```
 
 ---
@@ -1241,8 +1254,8 @@ rm -rf "/Users/leonardoaraujo/Library/Mobile Documents/iCloud~md~obsidian/Docume
 ```bash
 # Create timestamped backup
 mkdir -p ~/Downloads/VaultBackup && \
-cd "/Users/leonardoaraujo/Library/Mobile Documents/iCloud~md~obsidian/Documents" && \
-zip -r ~/Downloads/VaultBackup/"Leo_Knowledge_$(date +%Y-%m-%d_%H-%M-%S).zip" "Leo Knowledge" \
+cd "$(dirname "$OBSIDIAN_ICLOUD")" && \
+zip -r ~/Downloads/VaultBackup/"${OBSIDIAN_VAULT_NAME}_$(date +%Y-%m-%d_%H-%M-%S).zip" "$(basename "$OBSIDIAN_ICLOUD")" \
   -x "*.DS_Store" -x "*/.obsidian/workspace*.json" -x "*/.smart-env/*"
 
 # List backups
@@ -1271,16 +1284,16 @@ cd ~/Downloads/VaultBackup && ls -t *.zip 2>/dev/null | tail -n +6 | xargs rm -f
 | Biology | Bio, bioinformatics |
 | Finances | Markets, trading, DeFi |
 | Game Development | Unity, Unreal |
-| People | Personal info, family |
-| Amini | Amini project notes |
-| Cyberdyne | Cyberdyne project notes |
 | **Things to Study** | Topics/videos to learn |
+
+> The folder list above is illustrative — your vault will have its own
+> top-level folders. Run `$CLI folders vault="$OBSIDIAN_VAULT_NAME"` to see them.
 
 ---
 
 ## Things to Study Folder
 
-Location: `/Users/leonardoaraujo/work/leo-obsidian-vault/Things to Study/`
+Location: `$OBSIDIAN_VAULT/Things to Study/`
 
 Used to track topics, videos, courses, and articles to study. **Managed primarily by the `/study-this` skill.**
 
@@ -1337,13 +1350,13 @@ date_added: YYYY-MM-DD
 ### List study items by status
 ```bash
 # All study notes
-ls "/Users/leonardoaraujo/work/leo-obsidian-vault/Things to Study/"
+ls "$OBSIDIAN_VAULT/Things to Study/"
 
 # Find pending items
-Grep: pattern="status: pending" path="/Users/leonardoaraujo/work/leo-obsidian-vault/Things to Study" glob="*.md"
+Grep: pattern="status: pending" path="$OBSIDIAN_VAULT/Things to Study" glob="*.md"
 
 # Find consolidated items
-Grep: pattern="status: consolidated" path="/Users/leonardoaraujo/work/leo-obsidian-vault/Things to Study" glob="*.md"
+Grep: pattern="status: consolidated" path="$OBSIDIAN_VAULT/Things to Study" glob="*.md"
 ```
 
 ---
@@ -1372,7 +1385,7 @@ When user asks:
 
 ## Important Reminders
 
-1. **Primary path:** `/Users/leonardoaraujo/work/leo-obsidian-vault`
+1. **Primary path:** `$OBSIDIAN_VAULT`
 2. **After changes:** Run sync to push to GitHub and iCloud
 3. **File formats:** `.md` (Markdown), `.base` (Bases YAML), `.canvas` (Canvas JSON)
 4. **Linking:** Wiki-style links `[[Note Name]]` for internal; Markdown `[text](url)` for external

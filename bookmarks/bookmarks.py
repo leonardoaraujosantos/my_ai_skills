@@ -51,7 +51,8 @@ except ImportError:
     HAS_REQUESTS = False
 
 # Configuration
-OBSIDIAN_VAULT = Path("/Users/leonardoaraujo/work/leo-obsidian-vault")
+# Vault location is configurable via the OBSIDIAN_VAULT env var.
+OBSIDIAN_VAULT = Path(os.environ.get("OBSIDIAN_VAULT", Path.home() / "obsidian-vault"))
 BOOKMARKS_DIR = OBSIDIAN_VAULT / "Resources" / "Bookmarks"
 BOOKMARKS_INDEX = BOOKMARKS_DIR / "_index.md"
 

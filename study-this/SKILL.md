@@ -8,6 +8,17 @@ argument-hint: <urls or references> [--priority high|medium|low] [--category <ca
 
 Two modes: **Study** (add new references) and **Consolidate** (merge learnings back into vault).
 
+## Configuration
+
+This skill reads/writes your Obsidian vault. Set these in your shell profile:
+
+```bash
+export OBSIDIAN_VAULT="$HOME/path/to/your-vault"   # local vault repo path
+export OBSIDIAN_VAULT_NAME="YourVault"             # vault name used by the Obsidian CLI
+```
+
+Commands below reference `$OBSIDIAN_VAULT` and `$OBSIDIAN_VAULT_NAME`.
+
 ---
 
 ## Mode 1: Study — Adding New References
@@ -48,12 +59,12 @@ From the collected metadata, determine a concise, descriptive topic name. If ref
 **IMPORTANT:** Before creating the study note, search the vault for existing notes about this topic.
 
 ```bash
-/Applications/Obsidian.app/Contents/MacOS/Obsidian search vault="Leo Knowledge" query="<topic keywords>" 2>&1 | grep -v "^2026\|installer\|Loading\|asar"
+/Applications/Obsidian.app/Contents/MacOS/Obsidian search vault="$OBSIDIAN_VAULT_NAME" query="<topic keywords>" 2>&1 | grep -v "^2026\|installer\|Loading\|asar"
 ```
 
 Also search with Grep for broader matches:
 ```bash
-Grep: pattern="<topic keyword>" path="/Users/leonardoaraujo/work/leo-obsidian-vault" glob="*.md"
+Grep: pattern="<topic keyword>" path="$OBSIDIAN_VAULT" glob="*.md"
 ```
 
 **Exclude** results from `Things to Study/` folder — we want knowledge notes, not other study notes.
@@ -65,7 +76,7 @@ If existing notes are found:
 
 ### Step 5: Create the Obsidian study note
 
-Write to: `/Users/leonardoaraujo/work/leo-obsidian-vault/Things to Study/<Topic Name>.md`
+Write to: `$OBSIDIAN_VAULT/Things to Study/<Topic Name>.md`
 
 **Before creating**, check if a note on the same topic already exists in `Things to Study/`. If it does, **append** the new references instead of creating a duplicate.
 
@@ -123,21 +134,9 @@ gws tasks tasks insert --params '{"tasklist": "ZjF1bU9sdlFzS3NhMi1jWg"}' --json 
 
 ### Step 7: Sync vault to GitHub and iCloud
 
-```bash
-cd /Users/leonardoaraujo/work/leo-obsidian-vault && \
-git add "Things to Study/" && \
-git commit -m "Add study note: <Topic Name>" && \
-git push && \
-rsync -av --delete \
-  --exclude='.git/' \
-  --exclude='.DS_Store' \
-  --exclude='.obsidian/workspace.json' \
-  --exclude='.obsidian/workspace-mobile.json' \
-  --exclude='.smart-env/' \
-  --exclude='.trash/' \
-  /Users/leonardoaraujo/work/leo-obsidian-vault/ \
-  "/Users/leonardoaraujo/Library/Mobile Documents/iCloud~md~obsidian/Documents/Leo Knowledge/"
-```
+Use the **`obsidian` skill** to commit and sync the vault (`/obsidian sync`) —
+it pulls before it pushes, so mobile edits aren't lost. Don't inline the
+`rsync --delete` recipe here.
 
 ### Step 8: Confirm to the user
 
@@ -161,7 +160,7 @@ If the user specifies a topic, find the matching note in `Things to Study/`.
 If not specified, list study notes with `status: pending` or `status: in_progress` and ask which one.
 
 ```bash
-ls "/Users/leonardoaraujo/work/leo-obsidian-vault/Things to Study/"
+ls "$OBSIDIAN_VAULT/Things to Study/"
 ```
 
 Read the study note to understand the topic, references, and any notes the user has added.
@@ -181,12 +180,12 @@ If the Key Points and Notes sections are empty, ask the user what they learned o
 Search the vault (excluding `Things to Study/`) for notes related to the topic:
 
 ```bash
-/Applications/Obsidian.app/Contents/MacOS/Obsidian search vault="Leo Knowledge" query="<topic keywords>" 2>&1 | grep -v "^2026\|installer\|Loading\|asar\|Things to Study"
+/Applications/Obsidian.app/Contents/MacOS/Obsidian search vault="$OBSIDIAN_VAULT_NAME" query="<topic keywords>" 2>&1 | grep -v "^2026\|installer\|Loading\|asar\|Things to Study"
 ```
 
 Also use Grep for broader coverage:
 ```bash
-Grep: pattern="<topic keyword>" path="/Users/leonardoaraujo/work/leo-obsidian-vault" glob="*.md"
+Grep: pattern="<topic keyword>" path="$OBSIDIAN_VAULT" glob="*.md"
 ```
 
 Filter out `Things to Study/` results.
@@ -237,21 +236,8 @@ gws tasks tasks update --params '{"tasklist": "ZjF1bU9sdlFzS3NhMi1jWg", "task": 
 
 ### Step 7: Sync vault
 
-```bash
-cd /Users/leonardoaraujo/work/leo-obsidian-vault && \
-git add -A && \
-git commit -m "Consolidate study: <Topic Name>" && \
-git push && \
-rsync -av --delete \
-  --exclude='.git/' \
-  --exclude='.DS_Store' \
-  --exclude='.obsidian/workspace.json' \
-  --exclude='.obsidian/workspace-mobile.json' \
-  --exclude='.smart-env/' \
-  --exclude='.trash/' \
-  /Users/leonardoaraujo/work/leo-obsidian-vault/ \
-  "/Users/leonardoaraujo/Library/Mobile Documents/iCloud~md~obsidian/Documents/Leo Knowledge/"
-```
+Use the **`obsidian` skill** to commit and sync the vault (`/obsidian sync`) —
+it pulls before it pushes, so mobile edits aren't lost.
 
 ### Step 8: Confirm to the user
 

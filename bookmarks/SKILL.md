@@ -22,8 +22,13 @@ SKILL_DIR="$HOME/.claude/skills/bookmarks"
 
 ## Vault Location
 
-```
-~/work/leo-obsidian-vault/Resources/Bookmarks/
+Bookmarks are written under `Resources/Bookmarks/` inside your Obsidian vault.
+The vault path is read from the `OBSIDIAN_VAULT` environment variable
+(default: `~/obsidian-vault`):
+
+```bash
+export OBSIDIAN_VAULT="$HOME/path/to/your-vault"   # in your shell profile
+# → $OBSIDIAN_VAULT/Resources/Bookmarks/
 ```
 
 ## Commands
@@ -93,8 +98,6 @@ Each bookmark creates a note with:
 
 ## Syncing Changes
 
-After adding bookmarks, sync to GitHub and iCloud:
-
-```bash
-cd /Users/leonardoaraujo/work/leo-obsidian-vault && git add -A && git commit -m "Add bookmark" && git push && rsync -av --delete --exclude='.git/' --exclude='.DS_Store' --exclude='.obsidian/workspace.json' --exclude='.obsidian/workspace-mobile.json' --exclude='.smart-env/' --exclude='.trash/' /Users/leonardoaraujo/work/leo-obsidian-vault/ "/Users/leonardoaraujo/Library/Mobile Documents/iCloud~md~obsidian/Documents/Leo Knowledge/"
-```
+After adding bookmarks, use the **`obsidian` skill** to commit and sync the
+vault to GitHub/iCloud (`/obsidian sync`) rather than duplicating the sync
+recipe here — that skill pulls before it pushes, avoiding data loss.
