@@ -167,7 +167,9 @@ When the user says `/pg-client`, parse `$ARGUMENTS`:
 
 ## Security Notes
 
-- Profiles with passwords are stored at `~/.claude/skills/pg-client/profiles.json`
+- Profiles with passwords are stored at `~/.claude/skills/pg-client/profiles.json`, written with owner-only (`0600`) permissions
 - Passwords are masked in `profiles` output
+- `query` runs in a **read-only** transaction — mutating statements (DROP/DELETE/UPDATE) are rejected by the database; use `exec` for writes
 - `exec` command uses transactions — rolls back on error
 - Never run DROP/TRUNCATE without user confirmation
+- Table/schema and Apache AGE graph names are quoted/validated before use, so identifiers can't be used for SQL injection

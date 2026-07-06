@@ -9,6 +9,7 @@ Manages authentication tokens per server.
 import argparse
 import asyncio
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -39,6 +40,11 @@ def load_tokens() -> dict:
 def save_tokens(tokens: dict):
     TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)
     TOKEN_FILE.write_text(json.dumps(tokens, indent=2))
+    # Auth tokens are secrets — keep the file owner-only.
+    try:
+        os.chmod(TOKEN_FILE, 0o600)
+    except OSError:
+        pass
 
 def set_token(server_name: str, token: str, token_type: str = "bearer"):
     tokens = load_tokens()
@@ -81,6 +87,11 @@ def load_servers() -> dict:
 def save_servers(servers: dict):
     SERVERS_FILE.parent.mkdir(parents=True, exist_ok=True)
     SERVERS_FILE.write_text(json.dumps(servers, indent=2))
+    # May contain connection URLs/headers — keep the file owner-only.
+    try:
+        os.chmod(SERVERS_FILE, 0o600)
+    except OSError:
+        pass
 
 def register_server(name: str, transport: str, **kwargs):
     servers = load_servers()
