@@ -45,19 +45,34 @@ Actions (each is a one-key dict unless noted):
   {"eval": "js expression"}         run JS in the page (returns are printed)
   {"screenshot": "path" | null}     capture (null → use the scene's "out"); full page if {"full": true}
 """
-import sys, json
+import sys, json, os
 from playwright.sync_api import sync_playwright
 
 
-def _context(b, sb):
-    kw = {"viewport": {"width": sb.get("viewport", [1440, 900])[0],
-                        "height": sb.get("viewport", [1440, 900])[1]},
-          "device_scale_factor": sb.get("scale", 2)}
+def _context(p, b, sb, storage_state=None):
+    """Build a browser context honoring the storyboard's device/viewport/scale.
+
+    `p` is the Playwright object — device descriptors live on `p.devices`, not
+    on the Browser (Browser has no public `_playwright`). When a device is set,
+    its descriptor (viewport, UA, scale, touch) is used; an explicit `scale`
+    still overrides. Storage state is merged in the same call so authenticated
+    scenes keep the device emulation instead of falling back to desktop.
+    """
     dev = sb.get("device")
     if dev:
-        # merge Playwright device descriptor (mobile web / touch / UA)
-        return b.new_context(**{**b._playwright.devices[dev]})
-    return b.new_context(**kw)
+        opts = dict(p.devices[dev])
+        # `default_browser_type` is part of the descriptor but not a valid
+        # new_context() argument — drop it.
+        opts.pop("default_browser_type", None)
+        if "scale" in sb:
+            opts["device_scale_factor"] = sb["scale"]
+    else:
+        opts = {"viewport": {"width": sb.get("viewport", [1440, 900])[0],
+                             "height": sb.get("viewport", [1440, 900])[1]},
+                "device_scale_factor": sb.get("scale", 2)}
+    if storage_state:
+        opts["storage_state"] = storage_state
+    return b.new_context(**opts)
 
 
 def do_action(pg, a, scene_out=None):
@@ -95,7 +110,7 @@ def run(sb):
         state = sb.get("state_file", "auth.json")
         auth = sb.get("auth")
         if auth:
-            ctx = _context(b, sb); pg = ctx.new_page()
+            ctx = _context(p, b, sb); pg = ctx.new_page()
             pg.goto(sb["base"].rstrip("/") + auth.get("url", "/login"), wait_until="domcontentloaded")
             for a in auth["steps"]:
                 do_action(pg, a)
@@ -108,15 +123,9 @@ def run(sb):
             print("auth done, url:", pg.url)
             ctx.storage_state(path=state); ctx.close()
 
-        # scenes reuse saved state if present
-        import os
-        ctx_kw = {}
-        if os.path.exists(state):
-            ctx_kw["storage_state"] = state
-        base_ctx = _context(b, sb) if not ctx_kw else b.new_context(
-            storage_state=state,
-            viewport={"width": sb.get("viewport", [1440, 900])[0], "height": sb.get("viewport", [1440, 900])[1]},
-            device_scale_factor=sb.get("scale", 2))
+        # scenes reuse saved auth state if present — still honoring the device
+        state_arg = state if os.path.exists(state) else None
+        base_ctx = _context(p, b, sb, storage_state=state_arg)
         pg = base_ctx.new_page()
         for sc in sb.get("scenes", []):
             print("scene:", sc.get("out"))
@@ -129,11 +138,9 @@ def run(sb):
 def probe(url, state=None, device=None):
     with sync_playwright() as p:
         b = p.chromium.launch(headless=True)
-        kw = {"viewport": {"width": 1440, "height": 900}, "device_scale_factor": 2}
-        if state:
-            import os
-            if os.path.exists(state): kw["storage_state"] = state
-        ctx = b.new_context(**kw); pg = ctx.new_page()
+        sb = {"device": device} if device else {}
+        storage = state if (state and os.path.exists(state)) else None
+        ctx = _context(p, b, sb, storage_state=storage); pg = ctx.new_page()
         pg.goto(url, wait_until="networkidle"); pg.wait_for_timeout(2500)
         els = pg.evaluate("""() => {
           const out=[], seen=new Set();
