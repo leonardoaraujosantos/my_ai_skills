@@ -33,8 +33,9 @@ SKILLS_DIR = Path.home() / ".claude" / "skills"
 REPO_URL = "https://github.com/leonardoaraujosantos/my_ai_skills.git"
 REPO_LOCAL = Path("/tmp/my_ai_skills")
 
-# Skills to sync (exclude this skill itself to avoid recursion)
-EXCLUDE_SKILLS = {"sync-skills"}
+# All local skills are synced, including this one (it copies into a throwaway
+# clone, so there is no recursion to avoid).
+EXCLUDE_SKILLS = set()
 
 # File patterns that must never be pushed to the public skills repo.
 # These typically contain secrets, credentials, tokens, or local-only config.
@@ -42,6 +43,7 @@ EXCLUDE_FILE_PATTERNS = {
     "tokens.json",
     "profiles.json",
     "credentials.json",
+    ".credentials.json",
     "secrets.json",
     "servers.json",
     ".env",
@@ -50,6 +52,21 @@ EXCLUDE_FILE_PATTERNS = {
     "storage_state.json",
     "auth.json",
 }
+
+# The pentest scope file ships as a placeholder template, but a user may have
+# populated their local copy with real target hostnames. Never push a populated
+# scope to the public repo; the template (still carrying the markers) is fine.
+SCOPE_FILE_NAME = "security-scope.yaml"
+_SCOPE_PLACEHOLDER_MARKERS = ("REPLACE_ME", "YYYY-MM-DD")
+
+
+def _is_populated_scope(path) -> bool:
+    """True if a security-scope.yaml has had its template markers replaced."""
+    try:
+        text = Path(path).read_text()
+    except OSError:
+        return False
+    return not any(marker in text for marker in _SCOPE_PLACEHOLDER_MARKERS)
 
 # Suffixes/prefixes for files to always skip
 EXCLUDE_FILE_SUFFIXES = (".pyc", ".pyo")
@@ -65,6 +82,9 @@ def _ignore_sensitive(src, names):
     for name in names:
         if name in EXCLUDE_FILE_PATTERNS:
             print(f"  [skip secret] {src}/{name}")
+            ignored.add(name)
+        elif name == SCOPE_FILE_NAME and _is_populated_scope(os.path.join(src, name)):
+            print(f"  [skip scope] {src}/{name} (populated — not the template)")
             ignored.add(name)
         elif name in EXCLUDE_DIR_NAMES:
             ignored.add(name)
@@ -105,10 +125,16 @@ def clone_or_pull_repo():
         print("Pulling latest changes...")
         result = run_cmd("git pull origin main", cwd=REPO_LOCAL, check=False)
         if result is None:
-            print("Warning: Could not pull, continuing with local copy...")
+            # Fail hard: pushing from a stale local clone can clobber commits
+            # that landed on the remote since it was cloned.
+            print("Error: could not pull latest changes. Refusing to push from a "
+                  f"possibly-stale copy. Fix the checkout at {REPO_LOCAL} (or delete "
+                  "it to force a fresh clone) and retry.")
+            return False
     else:
         print("Cloning repository...")
-        run_cmd(f"git clone {REPO_URL} {REPO_LOCAL}")
+        if run_cmd(f"git clone {REPO_URL} {REPO_LOCAL}") is None:
+            return False
 
     return REPO_LOCAL.exists()
 
@@ -130,6 +156,9 @@ def sync_skill(skill_name, dry_run=False):
                 if (name in EXCLUDE_FILE_PATTERNS
                         or name in EXCLUDE_DIR_NAMES
                         or name.endswith(EXCLUDE_FILE_SUFFIXES)):
+                    continue
+                if name == SCOPE_FILE_NAME and _is_populated_scope(os.path.join(root, name)):
+                    print(f"  [skip scope] {name} (populated)")
                     continue
                 rel_path = Path(root, name).relative_to(source)
                 print(f"  - {rel_path}")

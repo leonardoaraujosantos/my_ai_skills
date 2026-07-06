@@ -48,6 +48,22 @@ python3 "$SKILL_DIR/sync_skills.py" --list
 | `--dry-run` | Preview without making changes |
 | `--list` | List all available skills |
 
+## What is never pushed
+
+The repo is public, so the sync deliberately skips local-only secrets and
+sensitive files, even if they live inside a skill directory:
+
+- Credential/token/config files: `tokens.json`, `profiles.json`, `servers.json`,
+  `secrets.json`, `credentials.json`, `.credentials.json`, `auth.json`,
+  `storage_state.json`, and any `.env*`
+- A **populated** `pentest/security-scope.yaml` (real target hostnames). The
+  placeholder template still syncs; only a scope whose `REPLACE_ME` /
+  `YYYY-MM-DD` markers have been filled in is withheld.
+
+Use `--dry-run` to see exactly what would be pushed (skipped files are marked
+`[skip secret]` / `[skip scope]`). If the remote can't be pulled, the sync
+aborts rather than pushing from a possibly-stale clone.
+
 ## Workflow
 
 1. **After creating/modifying a skill**: Run `/sync-skills` to push changes
