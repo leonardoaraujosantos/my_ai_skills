@@ -48,6 +48,22 @@ For brevity in this doc, we'll write `coolify_cli <command>` but always use the 
 
 ---
 
+## Safety — confirm before production changes
+
+State-changing commands against a **production** server are outward-facing and
+hard to reverse. Before running any of these on `--server prd` (or any server
+you understand to be production), **stop and confirm the exact action with the
+user first**:
+
+- `deploy` / `deploy --force` — triggers a live deployment
+- `app-env-set` — changes runtime configuration (can break a running app)
+- `app-env-delete` — removes an env var (may take the app down)
+
+Read-only commands (`apps`, `app`, `app-envs`, `deployments`, `logs`,
+`services`, `resources`, `servers`, `teams`) are always safe to run.
+
+---
+
 ## Commands Reference
 
 ### List Applications

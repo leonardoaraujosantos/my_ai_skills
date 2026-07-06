@@ -105,10 +105,35 @@ git push
 
 **Triggered by:** `/obsidian push`, "push vault", "sync to iCloud"
 
+### 1. Safety check — do NOT delete un-pulled mobile edits
+
+The push below uses `rsync --delete`, which removes anything present in iCloud
+but not in the repo. Run this dry-run first: if it prints any `deleting …`
+lines, those are mobile/iPad edits you haven't pulled yet. **STOP and run
+`/obsidian pull` (or `/obsidian sync`) first** — pushing would delete them.
+Only proceed to step 2 when this prints `safe to push`.
+
+```bash
+# grep -i 'deleting' matches both GNU rsync ("deleting <file>") and the macOS
+# default openrsync ("<file>: deleting").
+rsync -avn --delete \
+  --exclude='.git/' --exclude='.DS_Store' \
+  --exclude='.obsidian/workspace.json' --exclude='.obsidian/workspace-mobile.json' \
+  --exclude='.smart-env/' --exclude='.trash/' \
+  $OBSIDIAN_VAULT/ "$OBSIDIAN_ICLOUD/" | grep -i 'deleting' \
+  && echo "!!! the files above would be DELETED from iCloud — run /obsidian pull first" \
+  || echo "safe to push"
+```
+
+### 2. Commit, push, and mirror to iCloud
+
+The commit is guarded so an empty "nothing to commit" doesn't abort the `&&`
+chain and skip the rsync.
+
 ```bash
 cd $OBSIDIAN_VAULT && \
 git add -A && \
-git commit -m "Update vault: <brief description>" && \
+{ git diff --cached --quiet || git commit -m "Update vault: <brief description>"; } && \
 git push && \
 rsync -av --delete \
   --exclude='.git/' \

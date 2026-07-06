@@ -58,13 +58,15 @@ From the collected metadata, determine a concise, descriptive topic name. If ref
 
 **IMPORTANT:** Before creating the study note, search the vault for existing notes about this topic.
 
-```bash
-/Applications/Obsidian.app/Contents/MacOS/Obsidian search vault="$OBSIDIAN_VAULT_NAME" query="<topic keywords>" 2>&1 | grep -v "^2026\|installer\|Loading\|asar"
+Primary (always works) — use the Grep tool over the vault:
+```
+Grep: pattern="<topic keyword>" path="$OBSIDIAN_VAULT" glob="*.md"
 ```
 
-Also search with Grep for broader matches:
+Optionally, if the Obsidian CLI is installed, it can add ranked full-text matches (skip if the command isn't available):
 ```bash
-Grep: pattern="<topic keyword>" path="$OBSIDIAN_VAULT" glob="*.md"
+/Applications/Obsidian.app/Contents/MacOS/Obsidian search vault="$OBSIDIAN_VAULT_NAME" query="<topic keywords>" 2>&1 \
+  | grep -vE '^[0-9]{4}-|installer|Loading|asar'
 ```
 
 **Exclude** results from `Things to Study/` folder — we want knowledge notes, not other study notes.
@@ -177,15 +179,17 @@ If the Key Points and Notes sections are empty, ask the user what they learned o
 
 ### Step 3: Find target vault notes to update
 
-Search the vault (excluding `Things to Study/`) for notes related to the topic:
+Search the vault (excluding `Things to Study/`) for notes related to the topic.
 
-```bash
-/Applications/Obsidian.app/Contents/MacOS/Obsidian search vault="$OBSIDIAN_VAULT_NAME" query="<topic keywords>" 2>&1 | grep -v "^2026\|installer\|Loading\|asar\|Things to Study"
+Primary (always works) — use the Grep tool:
+```
+Grep: pattern="<topic keyword>" path="$OBSIDIAN_VAULT" glob="*.md"
 ```
 
-Also use Grep for broader coverage:
+Optionally, if the Obsidian CLI is installed, for ranked full-text matches (skip if unavailable):
 ```bash
-Grep: pattern="<topic keyword>" path="$OBSIDIAN_VAULT" glob="*.md"
+/Applications/Obsidian.app/Contents/MacOS/Obsidian search vault="$OBSIDIAN_VAULT_NAME" query="<topic keywords>" 2>&1 \
+  | grep -vE '^[0-9]{4}-|installer|Loading|asar|Things to Study'
 ```
 
 Filter out `Things to Study/` results.

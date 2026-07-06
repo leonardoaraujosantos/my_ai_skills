@@ -19,12 +19,15 @@ Generate self-contained HTML files for technical diagrams, visualizations, and d
 
 **Proactive table rendering.** When you're about to present tabular data as an ASCII box-drawing table in the terminal (comparisons, audits, feature matrices, status reports, any structured rows/columns), generate an HTML page instead. The threshold: if the table has 4+ rows or 3+ columns, it belongs in the browser. Don't wait for the user to ask — render it as HTML automatically and tell them the file path. You can still include a brief text summary in the chat, but the table itself should be the HTML page.
 
-## Available Commands
+## Supported Workflows
 
-Detailed prompt templates in `./commands/`. In Claude Code, namespaced under `/visual/` (e.g., `/visual/diff-review`, `/visual/generate-slides`).
+Describe what you want in plain language — this skill covers the workflows
+below and produces the corresponding self-contained HTML page. (There is no
+separate command file per workflow; the guidance in this SKILL.md and the
+`references/` files drives all of them.)
 
-| Command | What it does |
-|---------|-------------|
+| Workflow | What it does |
+|----------|-------------|
 | `generate-web-diagram` | Generate an HTML diagram for any topic |
 | `generate-visual-plan` | Generate a visual implementation plan for a feature |
 | `generate-slides` | Generate a magazine-quality slide deck |
@@ -53,7 +56,7 @@ For prose accents, see "Prose Page Elements" in `./references/css-patterns.md`. 
 **What aesthetic?** Pick one and commit. The constrained aesthetics (Blueprint, Editorial, Paper/ink) are safer — they have specific requirements that prevent generic output. The flexible ones (IDE-inspired) require more discipline.
 
 **Constrained aesthetics (prefer these):**
-- Blueprint (technical drawing feel, subtle grid background, deep slate/blue palette, monospace labels, precise borders) — see `websocket-implementation-plan.html` for reference
+- Blueprint (technical drawing feel, subtle grid background, deep slate/blue palette, monospace labels, precise borders)
 - Editorial (serif headlines like Instrument Serif or Crimson Pro, generous whitespace, muted earth tones or deep navy + gold)
 - Paper/ink (warm cream `#faf7f5` background, terracotta/sage accents, informal feel)
 - Monochrome terminal (green/amber on near-black, monospace everything, CRT glow optional)
@@ -396,7 +399,7 @@ bash ./scripts/share.sh ~/.agent/diagrams/my-diagram.html
 - Preview deployments have configurable retention (default: 30 days)
 - Claim URL lets you transfer the deployment to your Vercel account
 
-See `./commands/share.md` for the `/share` command template.
+To publish a finished page, run the bundled `scripts/share.sh <file.html>` (it uses the vercel-deploy skill or the Vercel CLI).
 
 ## Quality Checks
 
