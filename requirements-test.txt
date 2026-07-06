@@ -5,3 +5,4 @@ Pillow>=9.1
 python-pptx>=0.6
 pypdf[image]>=4
 PyMuPDF>=1.24
+playwright>=1.40
