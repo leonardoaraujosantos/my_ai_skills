@@ -968,27 +968,27 @@ vault="Your Vault Name"
 CLI="/Applications/Obsidian.app/Contents/MacOS/Obsidian"
 
 # Search
-$CLI search vault="Leo Knowledge" query="kubernetes"
+$CLI search vault="$OBSIDIAN_VAULT_NAME" query="kubernetes"
 
 # Read
-$CLI read vault="Leo Knowledge" file="Python"
+$CLI read vault="$OBSIDIAN_VAULT_NAME" file="Python"
 
 # Create
-$CLI create vault="Leo Knowledge" path="Notes/NewNote.md" content="# Title\n\nContent"
+$CLI create vault="$OBSIDIAN_VAULT_NAME" path="Notes/NewNote.md" content="# Title\n\nContent"
 
 # Append
-$CLI append vault="Leo Knowledge" file="Python" content="\n## New Section"
+$CLI append vault="$OBSIDIAN_VAULT_NAME" file="Python" content="\n## New Section"
 
 # Daily notes
-$CLI daily:read vault="Leo Knowledge"
-$CLI daily:append vault="Leo Knowledge" content="- [ ] New task"
+$CLI daily:read vault="$OBSIDIAN_VAULT_NAME"
+$CLI daily:append vault="$OBSIDIAN_VAULT_NAME" content="- [ ] New task"
 
 # Tasks
-$CLI tasks vault="Leo Knowledge" todo
-$CLI task vault="Leo Knowledge" file="Note" line=5 toggle
+$CLI tasks vault="$OBSIDIAN_VAULT_NAME" todo
+$CLI task vault="$OBSIDIAN_VAULT_NAME" file="Note" line=5 toggle
 
 # Backlinks
-$CLI backlinks vault="Leo Knowledge" file="Python"
+$CLI backlinks vault="$OBSIDIAN_VAULT_NAME" file="Python"
 ```
 
 ### Files

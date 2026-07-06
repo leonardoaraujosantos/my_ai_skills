@@ -73,5 +73,5 @@ sudo sed -i '' '/140\.82\.112\.6  api\.github\.com/d' /etc/hosts
   `GHX_TIMEOUT`.
 - This does **not** affect git over SSH (which is unaffected by the block) —
   use normal `git push`/`git pull` as usual.
-- For repo-aware convenience inside this project, the default repo is
-  `leonardoaraujosantos/matlab_llvm`.
+- When a command needs an `owner/repo` and none is given, detect it from the
+  current checkout (`git remote get-url origin`).

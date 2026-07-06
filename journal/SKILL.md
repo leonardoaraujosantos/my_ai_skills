@@ -16,8 +16,13 @@ SKILL_DIR="$HOME/.claude/skills/journal"
 
 ## Vault Location
 
-```
-~/work/leo-obsidian-vault/Journal/Daily/YYYY-MM/
+Entries are written under `Journal/Daily/YYYY-MM/` inside your Obsidian vault.
+The vault path is read from the `OBSIDIAN_VAULT` environment variable
+(default: `~/obsidian-vault`):
+
+```bash
+export OBSIDIAN_VAULT="$HOME/path/to/your-vault"   # in your shell profile
+# → $OBSIDIAN_VAULT/Journal/Daily/YYYY-MM/
 ```
 
 ## Commands
@@ -95,8 +100,6 @@ Each daily entry includes:
 
 ## Syncing Changes
 
-After adding journal entries, sync to GitHub and iCloud:
-
-```bash
-cd /Users/leonardoaraujo/work/leo-obsidian-vault && git add -A && git commit -m "Journal update" && git push && rsync -av --delete --exclude='.git/' --exclude='.DS_Store' --exclude='.obsidian/workspace.json' --exclude='.obsidian/workspace-mobile.json' --exclude='.smart-env/' --exclude='.trash/' /Users/leonardoaraujo/work/leo-obsidian-vault/ "/Users/leonardoaraujo/Library/Mobile Documents/iCloud~md~obsidian/Documents/Leo Knowledge/"
-```
+After adding journal entries, use the **`obsidian` skill** to commit and sync
+the vault to GitHub/iCloud (`/obsidian sync`) rather than duplicating the sync
+recipe here — that skill pulls before it pushes, avoiding data loss.

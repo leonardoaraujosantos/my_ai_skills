@@ -41,7 +41,8 @@ from pathlib import Path
 import random
 
 # Configuration
-OBSIDIAN_VAULT = Path("/Users/leonardoaraujo/work/leo-obsidian-vault")
+# Vault location is configurable via the OBSIDIAN_VAULT env var.
+OBSIDIAN_VAULT = Path(os.environ.get("OBSIDIAN_VAULT", Path.home() / "obsidian-vault"))
 JOURNAL_DIR = OBSIDIAN_VAULT / "Journal"
 DAILY_DIR = JOURNAL_DIR / "Daily"
 
