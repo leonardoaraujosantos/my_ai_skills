@@ -1,5 +1,7 @@
 # My AI Skills
 
+[![CI](https://github.com/leonardoaraujosantos/my_ai_skills/actions/workflows/ci.yml/badge.svg)](https://github.com/leonardoaraujosantos/my_ai_skills/actions/workflows/ci.yml)
+
 A collection of Claude Code skills for automating common tasks. These skills extend Claude Code's capabilities with specialized tools for document conversion, data manipulation, media processing, and productivity.
 
 ## Installation
@@ -23,13 +25,16 @@ ln -s /path/to/my_ai_skills/youtube-playlist ~/.claude/skills/youtube-playlist
 
 | Skill | Description | Dependencies |
 |-------|-------------|--------------|
+| [app-showcase](#app-showcase) | Build a pitch deck or screenshot-driven manual from a live app | `playwright`, `gws` |
 | [bookmarks](#bookmarks) | Save URLs to Obsidian vault | `requests`, `beautifulsoup4` |
 | [code-review](#code-review) | Review code for architecture, security & test coverage | None |
+| [cognitive-complexity](#cognitive-complexity) | Measure & rank Cognitive Complexity to target refactors | `complexipy`, `gocognit`, `eslint-plugin-sonarjs`, `clang-tidy` |
 | [convert-to-md](#convert-to-md) | Convert PDF/PPTX to Markdown | `pymupdf`, `python-pptx` |
 | [coolify](#coolify) | Manage Coolify deployments & env vars via API | None |
 | [csv-tools](#csv-tools) | CSV manipulation & conversion | None |
 | [elevenlabs](#elevenlabs) | TTS, SFX, voice conversion, music & audio isolation | `ELEVENLABS_API_KEY` env var |
 | [generate-image](#generate-image) | AI media studio: images, video, music, TTS, analysis | `GEMINI_API_KEY` env var |
+| [github](#github) | Resilient GitHub REST access when api.github.com is blocked | `gh`, `curl`, `jq` |
 | [gws](#gws) | Google Workspace CLI integration | `@googleworkspace/cli` (npm) |
 | [image-tools](#image-tools) | Image manipulation | `Pillow` |
 | [journal](#journal) | Daily journaling to Obsidian | None |
@@ -39,6 +44,8 @@ ln -s /path/to/my_ai_skills/youtube-playlist ~/.claude/skills/youtube-playlist
 | [mermaid](#mermaid) | Create cross-platform Mermaid diagrams | None |
 | [notebooklm](#notebooklm) | Full Google NotebookLM API: notebooks, sources, artifacts | `notebooklm-py` (pip) |
 | [obsidian](#obsidian) | Obsidian vault management | Obsidian CLI |
+| [openspec](#openspec) | Spec-driven development with OpenSpec | `openspec` CLI (Node ≥ 20) |
+| [openspec-baseline](#openspec-baseline) | Onboard a brownfield codebase onto OpenSpec + CI | `openspec` CLI |
 | [pdf-tools](#pdf-tools) | PDF manipulation | `pypdf` |
 | [pentest](#pentest) | Authorized defensive security testing — 40 vuln playbooks + recon + Shannon | Per-playbook CLI tools (curl, ffuf, nuclei…); Docker for Shannon |
 | [pg-client](#pg-client) | PostgreSQL client with graph & RLS support | `psycopg2` |
@@ -46,6 +53,38 @@ ln -s /path/to/my_ai_skills/youtube-playlist ~/.claude/skills/youtube-playlist
 | [sync-skills](#sync-skills) | Sync skills to GitHub repo | None |
 | [visual-explainer](#visual-explainer) | Generate self-contained HTML diagrams, slide decks & dashboards | None (optional: `surf-cli` for AI images) |
 | [youtube-playlist](#youtube-playlist) | YouTube playlist & CC extraction | `yt-dlp`, `youtube-transcript-api` |
+
+---
+
+## app-showcase
+
+Build a polished sales pitch (Google Slides) or a screenshot-driven user manual (PDF) from a live app. Drives the app with Playwright (web) or a mobile simulator to capture real screenshots, and grounds every claim in the product's `openspec/` folder.
+
+### Installation
+
+```bash
+pip install playwright && playwright install chromium
+# plus the `gws` CLI (Google Workspace) for Slides/PDF export
+```
+
+### Usage
+
+```bash
+# Pitch deck from a live URL
+/app-showcase pitch https://app.example.com
+
+# Screenshot-driven manual from a local dev app
+/app-showcase manual "npm run dev" --auth user:pass
+```
+
+### Files
+
+```
+app-showcase/
+├── SKILL.md
+├── scripts/{capture.py, slides.py, manual_pdf.py}
+└── references/{playbook.md, mobile.md}
+```
 
 ---
 
@@ -143,6 +182,39 @@ The review ends with a summary including verdict (APPROVE / REQUEST CHANGES / NE
 ```
 code-review/
 └── SKILL.md
+```
+
+---
+
+## cognitive-complexity
+
+Measure Cognitive Complexity (the SonarSource metric) of C/C++, Python, Go, or TypeScript/JavaScript code and report a ranked, banded list of the most complex functions to target for refactoring. Wraps installed open-source analyzers — it does not re-implement the metric.
+
+### Installation
+
+```bash
+# Python/Go handled by the skill's setup; TS/JS uses a bundled toolchain
+bash "$HOME/.claude/skills/cognitive-complexity/scripts/setup.sh"
+```
+
+### Usage
+
+```bash
+SKILL="$HOME/.claude/skills/cognitive-complexity"
+
+# Rank the most complex functions in a folder
+python3 "$SKILL/scripts/cogcom.py" src/ --top 20
+
+# Filter by language and threshold, JSON output
+python3 "$SKILL/scripts/cogcom.py" . --lang python,go --threshold 15 --json
+```
+
+### Files
+
+```
+cognitive-complexity/
+├── SKILL.md
+└── scripts/{cogcom.py, setup.sh, ts/}
 ```
 
 ---
@@ -477,6 +549,32 @@ python3 "$SKILL_DIR/generate_image.py" tts "In the silence of the wasteland, a s
 generate-image/
 ├── SKILL.md
 └── generate_image.py
+```
+
+---
+
+## github
+
+Resilient GitHub access (issues, PRs, REST API) that survives local network blocks of `api.github.com`. Use when `gh` commands hang or time out, or to diagnose whether GitHub is actually down vs blocked locally.
+
+### Usage
+
+```bash
+SKILL="$HOME/.claude/skills/github"
+
+# Diagnose reachability and pin a working IP if needed
+bash "$SKILL/ghx.sh" doctor
+
+# Call the REST API through the resilient path
+bash "$SKILL/ghx.sh" api "repos/OWNER/REPO/issues?state=open"
+```
+
+### Files
+
+```
+github/
+├── SKILL.md
+└── ghx.sh
 ```
 
 ---
@@ -995,6 +1093,58 @@ $CLI backlinks vault="$OBSIDIAN_VAULT_NAME" file="Python"
 
 ```
 obsidian/
+└── SKILL.md
+```
+
+---
+
+## openspec
+
+Spec-driven development with OpenSpec. Discuss a feature then spec it before coding (proposal / specs / design / tasks), implement against the artifacts, validate, and archive so living specs stay in the repo.
+
+### Installation
+
+```bash
+# Requires Node ≥ 20.19
+npm install -g openspec   # verify with: openspec --version
+```
+
+### Usage
+
+```bash
+# Triggered conversationally or via the slash command
+/openspec propose <change-name>
+/openspec validate <change-name>
+/openspec archive <change-name>
+```
+
+### Files
+
+```
+openspec/
+└── SKILL.md
+```
+
+---
+
+## openspec-baseline
+
+Onboard an existing (brownfield) codebase onto OpenSpec end-to-end: initialize `openspec/`, reverse-engineer capability-scoped baseline specs from the current implementation, add an `openspec-validate` CI job, and open a PR.
+
+### Usage
+
+```bash
+# Run on a project with no openspec/ directory yet
+/openspec-baseline
+
+# Skip opening the PR
+/openspec-baseline no-pr
+```
+
+### Files
+
+```
+openspec-baseline/
 └── SKILL.md
 ```
 
@@ -1856,4 +2006,6 @@ Claude Code provides built-in slash commands for common operations.
 
 ## License
 
-MIT License - Feel free to use, modify, and distribute these skills.
+MIT License — see [LICENSE](LICENSE). Feel free to use, modify, and distribute
+these skills. Some skills are adapted from third parties and retain their
+original licenses/attribution (noted in `LICENSE`).
