@@ -113,4 +113,4 @@ fontsize: 10pt
 # Content here...
 ```
 
-**Install pandoc:** `brew install pandoc` (includes LaTeX via BasicTeX)
+**Install pandoc:** `brew install pandoc`. Pandoc does **not** bundle LaTeX — for the highest-quality PDF engine also install it separately: `brew install --cask basictex` (then restart the shell). Without LaTeX, pandoc still works via other engines and the skill falls back to fpdf2.

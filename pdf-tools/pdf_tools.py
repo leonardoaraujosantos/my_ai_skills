@@ -24,7 +24,6 @@ Options:
     -p, --pages <range>     Page range (e.g., "1-5", "1,3,5", "1-3,7-9")
     -a, --angle <degrees>   Rotation angle (90, 180, 270)
     --password <pwd>        Password for encryption/decryption
-    -q, --quality <level>   Compression quality (low, medium, high)
 
 Examples:
     python pdf_tools.py info document.pdf
@@ -274,8 +273,8 @@ def cmd_text(pdf_path, output=None):
         print(full_text)
 
 
-def cmd_compress(pdf_path, output, quality='medium'):
-    """Compress PDF."""
+def cmd_compress(pdf_path, output):
+    """Compress PDF (removes duplicate objects and recompresses content streams)."""
     check_dependency()
 
     if not Path(pdf_path).exists():
@@ -315,10 +314,9 @@ def cmd_images(pdf_path, output_dir):
         return
 
     try:
-        from PIL import Image
-        import io
+        from PIL import Image  # noqa: F401  (pypdf uses Pillow to decode images)
     except ImportError:
-        print("Error: Pillow required for image extraction. Run: pip install Pillow")
+        print("Error: Pillow required for image extraction. Run: pip install 'pypdf[image]'")
         return
 
     reader = PdfReader(pdf_path)
@@ -328,34 +326,19 @@ def cmd_images(pdf_path, output_dir):
     image_count = 0
 
     for page_num, page in enumerate(reader.pages):
-        if '/XObject' in page['/Resources']:
-            xobjects = page['/Resources']['/XObject'].get_object()
-
-            for obj_name in xobjects:
-                obj = xobjects[obj_name]
-                if obj['/Subtype'] == '/Image':
-                    image_count += 1
-
-                    # Get image data
-                    if '/Filter' in obj:
-                        if obj['/Filter'] == '/DCTDecode':
-                            ext = 'jpg'
-                        elif obj['/Filter'] == '/FlateDecode':
-                            ext = 'png'
-                        else:
-                            ext = 'png'
-                    else:
-                        ext = 'png'
-
-                    output_path = output_dir / f"image_{page_num+1}_{image_count:03d}.{ext}"
-
-                    try:
-                        data = obj.get_data()
-                        with open(output_path, 'wb') as f:
-                            f.write(data)
-                        print(f"Extracted: {output_path}")
-                    except Exception as e:
-                        print(f"Could not extract image {image_count}: {e}")
+        # page.images yields properly-decoded images (pypdf reconstructs a real
+        # PNG/JPEG via Pillow) — writing the raw XObject stream produces corrupt
+        # files for FlateDecode images, so use this API instead.
+        for img in page.images:
+            image_count += 1
+            stem = Path(img.name or f"image_{page_num + 1}_{image_count:03d}").name
+            output_path = output_dir / f"page{page_num + 1}_{image_count:03d}_{stem}"
+            try:
+                with open(output_path, 'wb') as f:
+                    f.write(img.data)
+                print(f"Extracted: {output_path}")
+            except Exception as e:
+                print(f"Could not extract image {image_count}: {e}")
 
     if image_count == 0:
         print("No images found in PDF")
@@ -581,7 +564,6 @@ def main():
     pages = None
     angle = None
     password = None
-    quality = 'medium'
 
     i = 0
     while i < len(args):
@@ -596,9 +578,6 @@ def main():
             i += 2
         elif args[i] == '--password' and i + 1 < len(args):
             password = args[i + 1]
-            i += 2
-        elif args[i] in ['-q', '--quality'] and i + 1 < len(args):
-            quality = args[i + 1]
             i += 2
         elif not args[i].startswith('-'):
             files.append(args[i])
@@ -642,7 +621,7 @@ def main():
 
     elif cmd == 'compress':
         if files:
-            cmd_compress(files[0], output, quality)
+            cmd_compress(files[0], output)
         else:
             print("Error: PDF file required")
 

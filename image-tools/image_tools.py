@@ -386,13 +386,17 @@ def main():
     elif cmd == 'chromakey':
         tolerance = 80
         chroma_color = (0, 255, 0)  # default green
-        j = 2
+        # args is already sys.argv[3:], so option parsing starts at index 0.
+        j = 0
         while j < len(args):
             if args[j] == '--tolerance' and j + 1 < len(args):
                 tolerance = int(args[j + 1])
                 j += 2
             elif args[j] == '--color' and j + 1 < len(args):
                 c = args[j + 1].lstrip('#')
+                if len(c) != 6 or any(ch not in '0123456789abcdefABCDEF' for ch in c):
+                    print(f"Error: --color must be a 6-digit hex value (e.g. #00ff00), got '{args[j + 1]}'")
+                    return
                 chroma_color = (int(c[0:2], 16), int(c[2:4], 16), int(c[4:6], 16))
                 j += 2
             elif args[j] in ('-o', '--output') and j + 1 < len(args):

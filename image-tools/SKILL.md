@@ -36,6 +36,7 @@ python3 "$SKILL_DIR/image_tools.py" <command> <image> [options]
 | `thumbnail` | Create thumbnail |
 | `grayscale` | Convert to grayscale |
 | `watermark` | Add text watermark |
+| `chromakey` | Remove a solid background color (make it transparent) |
 
 ## Options
 
@@ -49,6 +50,8 @@ python3 "$SKILL_DIR/image_tools.py" <command> <image> [options]
 | `-o, --output <file>` | Output file |
 | `--keep-aspect` | Keep aspect ratio (default) |
 | `--horizontal/--vertical` | Flip direction |
+| `--color <#hex>` | Chroma key color (default `#00ff00` green) |
+| `--tolerance <n>` | Chroma key color-distance tolerance (default 80) |
 
 ## Examples
 
@@ -82,4 +85,7 @@ python3 "$SKILL_DIR/image_tools.py" grayscale photo.jpg -o bw.jpg
 
 # Crop (left, top, right, bottom)
 python3 "$SKILL_DIR/image_tools.py" crop photo.jpg --crop 100 100 500 400 -o cropped.jpg
+
+# Remove a green-screen background (transparent PNG out)
+python3 "$SKILL_DIR/image_tools.py" chromakey subject.png --color "#00ff00" --tolerance 90 -o cutout.png
 ```
