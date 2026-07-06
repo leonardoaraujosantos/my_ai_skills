@@ -25,6 +25,7 @@ ln -s /path/to/my_ai_skills/youtube-playlist ~/.claude/skills/youtube-playlist
 
 | Skill | Description | Dependencies |
 |-------|-------------|--------------|
+| [api-client](#api-client) | HTTP client with saved request collections & environments (a CLI Postman) | None |
 | [app-showcase](#app-showcase) | Build a pitch deck or screenshot-driven manual from a live app | `playwright`, `gws` |
 | [bookmarks](#bookmarks) | Save URLs to Obsidian vault | `requests`, `beautifulsoup4` |
 | [code-review](#code-review) | Review code for architecture, security & test coverage | None |
@@ -32,7 +33,12 @@ ln -s /path/to/my_ai_skills/youtube-playlist ~/.claude/skills/youtube-playlist
 | [convert-to-md](#convert-to-md) | Convert PDF/PPTX to Markdown | `pymupdf`, `python-pptx` |
 | [coolify](#coolify) | Manage Coolify deployments & env vars via API | None |
 | [csv-tools](#csv-tools) | CSV manipulation & conversion | None |
+| [dep-audit](#dep-audit) | Multi-ecosystem dependency vulnerability & outdated audit with upgrade plan | Per-ecosystem: `npm`, `pip-audit`, `govulncheck`, `cargo-audit` |
+| [docker-tools](#docker-tools) | Docker/Compose debugging & maintenance recipes | `docker` CLI |
 | [elevenlabs](#elevenlabs) | TTS, SFX, voice conversion, music & audio isolation | `ELEVENLABS_API_KEY` env var |
+| [email-triage](#email-triage) | Gmail inbox triage: classify, summarize, draft replies, batch archive | `@googleworkspace/cli` (npm) |
+| [finance](#finance) | Personal finance from bank/card CSV exports: ledger, rules, reports | None |
+| [flashcards](#flashcards) | Flashcards from study notes for Anki or Obsidian | None (optional: `genanki`) |
 | [generate-image](#generate-image) | AI media studio: images, video, music, TTS, analysis | `GEMINI_API_KEY` env var |
 | [github](#github) | Resilient GitHub REST access when api.github.com is blocked | `gh`, `curl`, `jq` |
 | [gws](#gws) | Google Workspace CLI integration | `@googleworkspace/cli` (npm) |
@@ -49,10 +55,49 @@ ln -s /path/to/my_ai_skills/youtube-playlist ~/.claude/skills/youtube-playlist
 | [pdf-tools](#pdf-tools) | PDF manipulation | `pypdf` |
 | [pentest](#pentest) | Authorized defensive security testing — 40 vuln playbooks + recon + Shannon | Per-playbook CLI tools (curl, ffuf, nuclei…); Docker for Shannon |
 | [pg-client](#pg-client) | PostgreSQL client with graph & RLS support | `psycopg2` |
+| [release-notes](#release-notes) | Changelog / release notes from git history between refs | `gh` (fallback: github skill) |
 | [study-this](#study-this) | Process study references & manage Obsidian study notes | `@googleworkspace/cli` (npm), `yt-dlp` |
 | [sync-skills](#sync-skills) | Sync skills to GitHub repo | None |
+| [transcribe](#transcribe) | Local Whisper speech-to-text for audio/video (txt/srt/vtt/json/md) | `ffmpeg` + a Whisper backend |
+| [video-tools](#video-tools) | Video manipulation with ffmpeg: trim, compress, GIF, merge | `ffmpeg` |
 | [visual-explainer](#visual-explainer) | Generate self-contained HTML diagrams, slide decks & dashboards | None (optional: `surf-cli` for AI images) |
+| [weekly-review](#weekly-review) | Weekly review note from journal, calendar, tasks & git activity | journal, gws & obsidian skills |
 | [youtube-playlist](#youtube-playlist) | YouTube playlist & CC extraction | `yt-dlp`, `youtube-transcript-api` |
+
+---
+
+## api-client
+
+A CLI Postman: ad-hoc HTTP requests, saved request collections, and named environments with `{{var}}` substitution. Python stdlib only — no dependencies. Complements `pg-client` (databases) and `mcp-client` (MCP servers).
+
+### Usage
+
+```bash
+API="$HOME/.claude/skills/api-client/scripts/api_client.py"
+
+# Quick requests
+python3 "$API" r https://api.example.com/search -q q=widgets -q limit=5
+python3 "$API" r https://api.example.com/items -d '{"name": "widget", "qty": 3}'   # auto-POST
+python3 "$API" r https://api.example.com/me --auth env:API_TOKEN
+
+# Environments + saved requests
+python3 "$API" env-set dev base_url=http://localhost:3000 token=dev-secret
+python3 "$API" save get-user '{{base_url}}/users/{{id}}' --auth 'bearer:{{token}}' --collection users
+python3 "$API" run get-user -e dev --var id=42
+
+# Recent requests (Authorization values redacted in history)
+python3 "$API" history -n 10
+```
+
+Tokens in environments are stored plaintext (chmod 600) — prefer `--auth env:VAR` so secrets stay in your shell.
+
+### Files
+
+```
+api-client/
+├── SKILL.md
+└── scripts/api_client.py
+```
 
 ---
 
@@ -370,6 +415,44 @@ csv-tools/
 
 ---
 
+## dep-audit
+
+Multi-ecosystem dependency audit: scan for vulnerable and outdated packages and produce a prioritized upgrade plan. Detects ecosystems by manifest/lockfile (npm/pnpm/yarn, Python, Go, Rust, Ruby, PHP) and drives the native scanners (`npm audit`, `pip-audit`, `govulncheck`, `cargo audit`). Reports and plans only — never runs `npm audit fix` or upgrades without approval; missing scanners are reported as "not scanned", never silently skipped.
+
+### Usage
+
+```bash
+/dep-audit                        # audit the current project
+/dep-audit apps/api --prod-only   # production dependencies only
+/dep-audit --fix-plan             # ordered upgrade plan: security first, then minors, then majors
+```
+
+### Files
+
+```
+dep-audit/
+└── SKILL.md
+```
+
+---
+
+## docker-tools
+
+Opinionated Docker/Compose debugging and maintenance recipes: container status overview, a step-by-step unhealthy/restarting-container diagnosis workflow (health-check log, exit code, OOMKilled, restart count, exec-in), logs, exec & copy, staged safe disk cleanup (volumes last and always confirmed), compose lifecycle, networking, and image management. Local/host-level counterpart to the coolify skill.
+
+### Usage
+
+Ask things like "why is my container unhealthy?", "clean up docker disk usage", or "rebuild just the api service" — the skill drives the installed `docker` / `docker compose` CLI with show-before-destroy safety rules.
+
+### Files
+
+```
+docker-tools/
+└── SKILL.md
+```
+
+---
+
 ## elevenlabs
 
 Full audio generation suite powered by the ElevenLabs API: text-to-speech, sound effects, speech-to-speech voice conversion, music composition, and audio isolation (background-noise removal).
@@ -417,6 +500,85 @@ python3 "$SKILL_DIR/elevenlabs_cli.py" models
 elevenlabs/
 ├── SKILL.md
 └── elevenlabs_cli.py
+```
+
+---
+
+## email-triage
+
+Inbox triage over the gws CLI: fetch recent Gmail, classify threads into 🔴 action / 🟡 reply / 📰 newsletter / 📥 FYI buckets, and present a triage report. With explicit confirmation it drafts replies (prefers Gmail drafts over sending), adds action items as Google Tasks, and batch-archives bulk mail.
+
+Safety rules: never sends without showing the draft and getting approval, never deletes email (archive only, after listing affected messages), `--dry-run` = zero mutations, and email content is treated as untrusted data (prompt-injection guard).
+
+### Usage
+
+```bash
+/email-triage                     # last 2 days
+/email-triage --days 7 --dry-run
+/email-triage --focus "sender or topic"
+```
+
+### Files
+
+```
+email-triage/
+└── SKILL.md
+```
+
+---
+
+## finance
+
+Personal finance tracking from bank/card CSV exports: normalize statements into a local ledger, categorize spending by rules, and generate monthly reports. Handles per-bank CSV quirks via profiles (column mapping, date format, decimal comma, `--invert` for banks that export expenses as positive — e.g. Nubank exports). All data stays local.
+
+### Usage
+
+```bash
+FIN="$HOME/.claude/skills/finance/scripts/finance.py"
+
+# One-time: map your bank's CSV columns
+python3 "$FIN" profile-add nubank --date-col data --desc-col descrição --amount-col valor \
+  --date-format "%d/%m/%Y" --decimal-comma --invert --currency BRL --delimiter ";"
+
+# Monthly loop: import → categorize → report
+python3 "$FIN" import ~/Downloads/statement.csv -p nubank
+python3 "$FIN" rules-add "uber" transport
+python3 "$FIN" categorize --month 2026-07
+python3 "$FIN" report --month 2026-07 --markdown   # Obsidian-ready note
+```
+
+### Files
+
+```
+finance/
+├── SKILL.md
+└── scripts/finance.py
+```
+
+---
+
+## flashcards
+
+Generate spaced-repetition flashcards from study notes: Claude authors atomic Q/A and cloze cards from a note or topic (following authoring guidelines in the skill), then the script packages them for Anki (`.apkg` via optional `genanki`, or importable TSV) or the Obsidian spaced-repetition plugin. Closes the loop that study-this opens: capture → study → consolidate → retain.
+
+### Usage
+
+```bash
+SKILL="$HOME/.claude/skills/flashcards"
+
+# Claude writes cards.md in the documented format, then:
+python3 "$SKILL/flashcards.py" validate cards.md
+python3 "$SKILL/flashcards.py" convert cards.md --format apkg --deck "Networking" -o networking.apkg
+python3 "$SKILL/flashcards.py" convert cards.md --format obsidian   # Question::Answer lines for the vault
+python3 "$SKILL/flashcards.py" stats cards.md
+```
+
+### Files
+
+```
+flashcards/
+├── SKILL.md
+└── flashcards.py
 ```
 
 ---
@@ -1332,6 +1494,27 @@ pg-client/
 
 ---
 
+## release-notes
+
+Generate a changelog / release notes from git history between two refs: resolves the range (last tag → HEAD by default), gathers commits and merged PRs (via `gh`, falling back to the github skill's `ghx.sh` when the API is blocked), categorizes changes (Breaking / Added / Fixed / Changed / Performance / Docs), writes Keep-a-Changelog markdown, and suggests a semver bump. Can prepend to CHANGELOG.md or create a **draft** GitHub release — never publishes or pushes tags without approval.
+
+### Usage
+
+```bash
+/release-notes                                   # since the last tag
+/release-notes v1.2.0 v1.3.0                     # between two refs
+/release-notes --tag v2.0.0 --audience developers
+```
+
+### Files
+
+```
+release-notes/
+└── SKILL.md
+```
+
+---
+
 ## study-this
 
 Process study references (YouTube videos, PDFs, websites), create Obsidian vault notes under "Things to Study", add Google Tasks, and consolidate learnings back into the vault. Two modes: **Study** (add new references) and **Consolidate** (merge learnings into existing vault notes).
@@ -1425,6 +1608,78 @@ sync-skills/
 
 ---
 
+## transcribe
+
+Local speech-to-text for audio and video files. Auto-detects an installed Whisper backend (mlx-whisper → faster-whisper → openai-whisper → whisper.cpp); video/non-WAV input is converted to 16 kHz mono WAV via ffmpeg first. Outputs txt, srt, vtt, json, or Obsidian-ready markdown (with YAML frontmatter).
+
+### Installation
+
+```bash
+brew install ffmpeg
+pip install mlx-whisper      # recommended on Apple Silicon (or: faster-whisper / openai-whisper)
+```
+
+### Usage
+
+```bash
+SKILL="$HOME/.claude/skills/transcribe"
+
+# Transcript to meeting.txt
+python3 "$SKILL/transcribe.py" meeting.m4a
+
+# Portuguese voice memo → markdown note with timestamps
+python3 "$SKILL/transcribe.py" memo.m4a --lang pt --format md --timestamps
+
+# Video → subtitles, best quality
+python3 "$SKILL/transcribe.py" lecture.mp4 --format srt --model large-v3-turbo
+```
+
+Pipelines: yt-dlp download → transcribe (videos without CC), and transcribe `--format md` → study-this/obsidian vault notes.
+
+### Files
+
+```
+transcribe/
+├── SKILL.md
+└── transcribe.py
+```
+
+---
+
+## video-tools
+
+Manipulate videos with ffmpeg: inspect metadata, trim, compress, convert, extract audio, GIFs, thumbnails, resize, mute, change speed, merge clips. Never overwrites outputs unless `-y` is passed. Complements generate-image (post-process Veo output) and elevenlabs (clean extracted audio).
+
+### Installation
+
+```bash
+brew install ffmpeg
+```
+
+### Usage
+
+```bash
+SKILL="$HOME/.claude/skills/video-tools"
+
+python3 "$SKILL/video_tools.py" info clip.mp4
+python3 "$SKILL/video_tools.py" trim clip.mp4 -s 0:30 -d 10 -o cut.mp4
+python3 "$SKILL/video_tools.py" compress clip.mp4 --crf 28 --width 1280 -o small.mp4
+python3 "$SKILL/video_tools.py" extract-audio clip.mp4 -o audio.mp3
+python3 "$SKILL/video_tools.py" gif clip.mp4 --fps 12 --width 480 -s 1 -e 4 -o demo.gif
+python3 "$SKILL/video_tools.py" thumbnail clip.mp4 -t 5 -o thumb.jpg
+python3 "$SKILL/video_tools.py" merge a.mp4 b.mp4 -o full.mp4
+```
+
+### Files
+
+```
+video-tools/
+├── SKILL.md
+└── video_tools.py
+```
+
+---
+
 ## visual-explainer
 
 Generate beautiful, self-contained HTML pages that visually explain systems, code changes, plans, and data — Mermaid diagrams with zoom/pan, KPI dashboards, comparison tables, and magazine-quality slide decks, with anti-AI-slop guardrails. By [nicobailon](https://github.com/nicobailon/visual-explainer). Pairs naturally with the Artifact workflow and is useful for architecture overviews, diff reviews, and presentation decks.
@@ -1437,6 +1692,27 @@ Ask for any visual explanation — "make a diagram of this architecture", "turn 
 
 - Output is a single self-contained `.html` file (inlined CSS/JS) — viewable in any browser.
 - `references/` holds CSS patterns, library notes, and slide patterns; `templates/` holds reference HTML; `scripts/share.sh` deploys to Vercel for a public URL.
+
+---
+
+## weekly-review
+
+Aggregate the week's activity — journal entries (journal skill), calendar meetings and tasks (gws), git commits across `~/work` repos, and Obsidian notes touched — and synthesize a weekly review note saved to the vault at `Weekly Reviews/YYYY-Www.md`. Sections: summary, wins, challenges, learnings, meetings, shipped/git activity, mood & energy, open loops, and a proposed next-week focus. Missing sources are skipped and reported, never fabricated.
+
+### Usage
+
+```bash
+/weekly-review                # current week
+/weekly-review last           # previous week
+/weekly-review 2026-W26 --no-save
+```
+
+### Files
+
+```
+weekly-review/
+└── SKILL.md
+```
 
 ---
 
