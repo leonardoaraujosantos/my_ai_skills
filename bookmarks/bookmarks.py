@@ -207,12 +207,15 @@ A collection of saved bookmarks organized by category.
     # Read existing content
     content = BOOKMARKS_INDEX.read_text(encoding='utf-8')
 
-    # Find the table and add new entry
-    table_pattern = r'(\| Date \| Title \| Category \|\n\|------|-------|----------\|)'
+    # Find the header + separator row and insert the new entry right after it.
+    # Pipes must be escaped (an unescaped `|` is regex alternation) and the
+    # replacement is a function so a title/URL containing backslashes or `\1`
+    # can't be misread as a backreference.
+    table_pattern = r'(\| Date \| Title \| Category \|\n\|[-|]+\|)'
     new_row = f"\n| {date} | [{title}]({url}) | {category or 'Uncategorized'} |"
 
     if re.search(table_pattern, content):
-        content = re.sub(table_pattern, r'\1' + new_row, content)
+        content = re.sub(table_pattern, lambda m: m.group(1) + new_row, content, count=1)
         BOOKMARKS_INDEX.write_text(content, encoding='utf-8')
 
 
@@ -280,17 +283,18 @@ def search_bookmarks(query):
         if filepath.name.startswith('_'):
             continue
 
-        content = filepath.read_text(encoding='utf-8').lower()
+        content = filepath.read_text(encoding='utf-8')
 
-        if query in content:
-            # Parse info
+        # Match case-insensitively, but parse fields from the ORIGINAL content
+        # so URLs and titles keep their real casing.
+        if query in content.lower():
             url_match = re.search(r'^url:\s*(.+)$', content, re.MULTILINE)
             title_match = re.search(r'^# (.+)$', content, re.MULTILINE)
 
             title = title_match.group(1).strip() if title_match else filepath.stem
             url = url_match.group(1).strip() if url_match else ""
 
-            results.append({'title': title.title(), 'url': url, 'path': str(filepath)})
+            results.append({'title': title, 'url': url, 'path': str(filepath)})
 
     if results:
         print(f"Found {len(results)} results for '{query}':\n")

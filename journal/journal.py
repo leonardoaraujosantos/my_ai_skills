@@ -209,6 +209,11 @@ def cmd_add(text, mood=None, energy=None, section=None, tags=None, date=None):
 
     entry_parts.append(f"\n{text}\n")
 
+    if tags:
+        tag_line = " ".join(f"#{t.strip()}" for t in tags.split(",") if t.strip())
+        if tag_line:
+            entry_parts.append(f"{tag_line}\n")
+
     entry = "".join(entry_parts)
 
     # Find section to add to

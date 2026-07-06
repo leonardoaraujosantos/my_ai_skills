@@ -434,7 +434,8 @@ def main():
     p_music.add_argument("--plan", help="Path to JSON composition plan file (overrides prompt)")
     p_music.add_argument("--instrumental", action="store_true", help="Force instrumental (no vocals)")
     p_music.add_argument("--seed", type=int, help="Random seed for reproducibility")
-    p_music.add_argument("--strict-duration", action="store_true", default=True, help="Strictly respect section durations in plan")
+    p_music.add_argument("--no-strict-duration", action="store_false", dest="strict_duration", default=True,
+                         help="Allow the model to deviate from section durations (strict by default)")
     p_music.set_defaults(func=cmd_music)
 
     # --- isolate ---

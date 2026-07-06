@@ -16,7 +16,6 @@ Commands:
     sort        Sort by column(s)
     to-json     Convert to JSON
     to-markdown Convert to Markdown table
-    query       Run SQL-like query on CSV
 
 Options:
     -n, --rows <n>      Number of rows for head/tail
@@ -158,8 +157,10 @@ def cmd_filter(file_path, condition, has_header=True, output=None):
     """Filter rows by condition."""
     headers, rows = read_csv(file_path, has_header)
 
-    # Parse condition (simple parser for: column op value)
-    cond_match = re.match(r'(\w+)\s*(==|!=|>|<|>=|<=|contains)\s*["\']?([^"\']*)["\']?', condition)
+    # Parse condition (simple parser for: column op value).
+    # Order matters: try the two-char operators (>=, <=) before > and < so
+    # "age >= 30" doesn't parse as op ">" with value "= 30".
+    cond_match = re.match(r'(\w+)\s*(>=|<=|==|!=|>|<|contains)\s*["\']?([^"\']*)["\']?', condition)
     if not cond_match:
         print(f"Invalid condition: {condition}")
         return

@@ -151,21 +151,30 @@ async def connect_server(transport: str, server_name: Optional[str] = None, **kw
         params = StdioServerParameters(command=cmd, args=cmd_args, env=env)
         async with stdio_client(params) as (rs, ws):
             async with ClientSession(rs, ws) as session:
-                await session.initialize()
+                init_result = await session.initialize()
+                # serverInfo lives on the initialize() result, not the session —
+                # attach it so explore/health can show the server name/version.
+                session.server_info = getattr(init_result, "serverInfo", None)
                 yield session
 
     elif transport == "sse":
         url = kwargs.get("url", "")
         async with sse_client(url, headers=headers) as (rs, ws):
             async with ClientSession(rs, ws) as session:
-                await session.initialize()
+                init_result = await session.initialize()
+                # serverInfo lives on the initialize() result, not the session —
+                # attach it so explore/health can show the server name/version.
+                session.server_info = getattr(init_result, "serverInfo", None)
                 yield session
 
     elif transport in ("http", "streamable-http"):
         url = kwargs.get("url", "")
         async with streamablehttp_client(url, headers=headers) as (rs, ws, _):
             async with ClientSession(rs, ws) as session:
-                await session.initialize()
+                init_result = await session.initialize()
+                # serverInfo lives on the initialize() result, not the session —
+                # attach it so explore/health can show the server name/version.
+                session.server_info = getattr(init_result, "serverInfo", None)
                 yield session
     else:
         raise ValueError(f"Unknown transport: {transport}")
@@ -264,7 +273,7 @@ async def cmd_explore(args):
         out("=" * 60)
         try:
             r = await session.list_resource_templates()
-            templates = r.resource_templates if hasattr(r, 'resource_templates') else []
+            templates = getattr(r, 'resourceTemplates', []) or []
             if templates:
                 for t in templates:
                     out(f"\n  {t.uriTemplate}")
