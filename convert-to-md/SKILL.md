@@ -1,6 +1,6 @@
 ---
 name: convert-to-md
-description: Convert PDF or PowerPoint (PPTX) files to Markdown format. Use this skill when the user wants to convert documents to Markdown, extract text from PDFs, or turn presentations into readable text.
+description: Convert PDF or PowerPoint (PPTX) files to Markdown (headings preserved, images extracted). Use for an explicit one-off document→Markdown conversion. For automatic conversion when Claude reads a binary doc, use the markitdown-hook skill; for a plain text dump of a PDF use pdf-tools `text`.
 argument-hint: <file_path> [--pages 1-10] [--slides 1-10] [--no-images]
 ---
 

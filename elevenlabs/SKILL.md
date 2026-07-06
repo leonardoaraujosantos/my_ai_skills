@@ -1,7 +1,7 @@
 ---
 name: elevenlabs
-description: Generate speech, sound effects, convert voices, and isolate audio using ElevenLabs API. Use when the user wants to create voiceovers, narration, game SFX, voice conversion, or clean up audio files.
-user_invocable: false
+description: Generate speech, sound effects, convert voices, and isolate audio using ElevenLabs API. Use when the user wants to create voiceovers, narration, game SFX, voice conversion, or clean up audio files. Prefer this over generate-image for realistic/cloned voices, voice conversion, and sound effects; use generate-image for Gemini TTS and Lyria music.
+argument-hint: tts|sfx|sts|music|isolate|voices|models [options]
 ---
 
 # ElevenLabs Audio Studio
