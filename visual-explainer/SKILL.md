@@ -1,6 +1,7 @@
 ---
 name: visual-explainer
-description: Generate beautiful, self-contained HTML pages that visually explain systems, code changes, plans, and data. Use when the user asks for a diagram, architecture overview, diff review, plan review, project recap, comparison table, or any visual explanation of technical concepts. Also use proactively when you are about to render a complex ASCII table (4+ rows or 3+ columns) — present it as a styled HTML page instead.
+description: Generate beautiful, self-contained HTML pages that visually explain systems, code changes, plans, and data. Use when the user asks for a diagram, architecture overview, diff review, plan review, project recap, comparison table, or any visual explanation of technical concepts. Also use proactively when you are about to render a complex ASCII table (4+ rows or 3+ columns) — present it as a styled HTML page instead. For a Mermaid diagram embedded in a Markdown file rendered by Obsidian/GitHub/Notion, use the mermaid skill instead (its compatibility rules differ from HTML-page Mermaid).
+argument-hint: <what to explain> [diagram | slides | dashboard | diff]
 model: sonnet
 license: MIT
 compatibility: Requires a browser to view generated HTML files. Optional surf-cli for AI image generation.
@@ -13,6 +14,8 @@ metadata:
 # Visual Explainer
 
 Generate self-contained HTML files for technical diagrams, visualizations, and data tables. Always open the result in the browser. Never fall back to ASCII art when this skill is loaded.
+
+> **Scope vs the `mermaid` skill.** The Mermaid guidance here is for diagrams embedded in the **HTML pages this skill generates** (which bundle a full Mermaid runtime, so `<br/>` in labels and `%%{init}%%` are fine). For a Mermaid **code block inside a Markdown file** rendered by Obsidian/GitHub/Notion, use the `mermaid` skill instead — those renderers are stricter and its rules apply.
 
 **Proactive table rendering.** When you're about to present tabular data as an ASCII box-drawing table in the terminal (comparisons, audits, feature matrices, status reports, any structured rows/columns), generate an HTML page instead. The threshold: if the table has 4+ rows or 3+ columns, it belongs in the browser. Don't wait for the user to ask — render it as HTML automatically and tell them the file path. You can still include a brief text summary in the chat, but the table itself should be the HTML page.
 

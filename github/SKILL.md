@@ -1,6 +1,7 @@
 ---
 name: github
 description: Resilient GitHub access (issues, PRs, REST API) that survives local network blocks of api.github.com. Use when `gh` commands hang/time out, when fetching or editing issues/PRs over the API, or to diagnose whether GitHub is actually down vs blocked locally. Triggers — "gh hangs", "github times out", "can't reach github api", "is github down", view/edit issue or PR.
+argument-hint: "[doctor | status | api <path> | run <gh args>]"
 ---
 
 # GitHub (resilient)

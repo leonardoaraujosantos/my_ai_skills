@@ -1,6 +1,6 @@
 ---
 name: generate-image
-description: Creative AI studio — generate images (OpenAI gpt-image-1 / dall-e-3 by default; or Google Imagen 4 / Nano Banana 2), videos (Veo 3.1), music (Lyria 3), speech (Gemini TTS), or analyze images to extract prompts. Use when user asks to generate, create, make, or analyze any media.
+description: Creative AI studio — generate images (OpenAI gpt-image-1 / dall-e-3 by default; or Google Imagen 4 / Nano Banana 2), videos (Veo 3.1), music (Lyria 3), speech (Gemini TTS), or analyze an image to extract its prompt. Use when the user wants to generate NEW media from a text prompt, or reverse-engineer a prompt from an image. For realistic/cloned voices, voice conversion, or sound effects use the elevenlabs skill; for editing/resizing existing image files use the image-tools skill.
 argument-hint: generate|video|music|tts|analyze <prompt_or_file> [options]
 allowed-tools: Bash, Read, Write
 ---
