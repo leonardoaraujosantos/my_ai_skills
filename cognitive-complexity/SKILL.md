@@ -28,6 +28,18 @@ This skill does **not** compute the metric itself — it dispatches each file to
 | 16–25 | 🟠 Warning | Refactor strongly recommended |
 | 26+ | 🔴 Critical | Significant tech debt, bug-prone |
 
+## Per-domain targets (max per function)
+
+Acceptable complexity depends on the domain — judge results against these targets, not the generic bands alone:
+
+| Domain | Max per function | Notes |
+|--------|------------------|-------|
+| Frontend (components, hooks, UI state) | 8–12 | Extract custom hooks; use `.map`/`.filter`; keep presentation and algorithm separate |
+| Backend services (APIs, business logic) | 15 | SonarQube default; guard clauses, push rules into service/use-case classes |
+| Compilers / parsers / systems | 25–35+ | AST traversal, recursion, large pattern matches; isolate with the Visitor pattern and document; still split above ~35 |
+
+These are guidance, not hard gates — a genuinely irreducible algorithm may exceed them; flag it rather than mangling the code to satisfy a number.
+
 ## Usage
 
 ```bash
