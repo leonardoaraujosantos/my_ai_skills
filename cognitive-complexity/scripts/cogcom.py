@@ -12,6 +12,9 @@ tools (SonarSource's definition in every case except the C/C++ fallback):
     TS/JS       -> eslint + eslint-plugin-sonarjs
     C / C++     -> clang-tidy (readability-function-cognitive-complexity)
                    fallback: lizard (CYCLOMATIC, clearly labeled)
+    Solidity    -> solhint code-complexity rule (CYCLOMATIC, clearly labeled)
+    SystemVerilog -> scc (per-FILE cyclomatic-style estimate, clearly labeled;
+                   no open-source tool reports per-function complexity for SV)
 
 Usage:
     cogcom.py <path> [<path>...] [--top N] [--threshold N] [--lang L] [--json]
@@ -46,7 +49,11 @@ EXT_LANG = {
     ".ts": "ts", ".tsx": "ts", ".js": "ts", ".jsx": "ts", ".mjs": "ts", ".cjs": "ts",
     ".c": "c", ".h": "cpp",
     ".cc": "cpp", ".cpp": "cpp", ".cxx": "cpp", ".hpp": "cpp", ".hh": "cpp", ".hxx": "cpp",
+    ".sol": "solidity",
+    ".sv": "sv", ".svh": "sv",
 }
+
+LANG_ALIASES = {"systemverilog": "sv", "sol": "solidity"}
 
 IGNORE_DIRS = {
     ".git", "node_modules", "vendor", "dist", "build", "out", "target",
@@ -171,6 +178,110 @@ def run_ts(files):
     return out, None
 
 
+SOL_DIR = SCRIPT_DIR / "solidity"
+# Threshold 1 = report every function solhint can score (it never reports
+# functions whose cyclomatic complexity is exactly 1 — the rule minimum is 1
+# and it only fires above the threshold).
+SOLHINT_CFG = '{"rules": {"code-complexity": ["warn", 1]}}'
+SOLHINT_MSG_RE = re.compile(r"cyclomatic complexity (\d+)")
+SOL_FUNC_RE = re.compile(
+    r"\b(?:function\s+([A-Za-z0-9_$]+)|(constructor)|(receive)|(fallback)"
+    r"|modifier\s+([A-Za-z0-9_$]+))"
+)
+
+
+def _solhint_bin():
+    local = SOL_DIR / "node_modules" / ".bin" / "solhint"
+    return str(local) if local.exists() else shutil.which("solhint")
+
+
+def _sol_func_name(path, line, cache):
+    """Best-effort function name from the source line solhint points at."""
+    if path not in cache:
+        try:
+            cache[path] = Path(path).read_text(errors="replace").splitlines()
+        except OSError:
+            cache[path] = []
+    lines = cache[path]
+    if line and 0 < line <= len(lines):
+        m = SOL_FUNC_RE.search(lines[line - 1])
+        if m:
+            return next((g for g in m.groups() if g), None)
+    return None
+
+
+def _parse_solhint(stdout):
+    """solhint --formatter json -> [{file,function,line,score}].
+
+    Shape observed (solhint 6.x): a JSON array of
+    {line,column,severity,message,ruleId,fix,filePath} entries plus a trailing
+    {conclusion} element; parse errors carry no ruleId. filePath is relative
+    to the subprocess cwd — we run with cwd="/" so it is the absolute path
+    minus the leading separator.
+    """
+    recs = []
+    for d in json.loads(stdout or "[]"):
+        if d.get("ruleId") != "code-complexity":
+            continue
+        m = SOLHINT_MSG_RE.search(d.get("message", ""))
+        if m:
+            recs.append({"file": os.sep + d["filePath"], "function": None,
+                         "line": d.get("line"), "score": int(m.group(1))})
+    return recs
+
+
+def run_solidity(files):
+    """Score .sol files via solhint's code-complexity rule (CYCLOMATIC)."""
+    solhint = _solhint_bin()
+    if not solhint:
+        return [], "solhint not installed (run setup.sh)"
+    files = [str(Path(f).resolve()) for f in files]
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as tf:
+        tf.write(SOLHINT_CFG)
+        cfg = tf.name
+    out, cache = [], {}
+    try:
+        for batch in chunked(files):
+            # exit code 1 just means findings/parse errors — parse stdout anyway
+            r = subprocess.run([solhint, "-c", cfg, "--formatter", "json", *batch],
+                               capture_output=True, text=True, timeout=900, cwd=os.sep)
+            for rec in _parse_solhint(r.stdout):
+                rec["function"] = _sol_func_name(rec["file"], rec["line"], cache)
+                out.append(rec)
+    except Exception as e:  # noqa: BLE001
+        return out, f"solhint error: {e}"
+    finally:
+        try:
+            os.unlink(cfg)
+        except OSError:
+            pass
+    return out, None
+
+
+def run_sv(files):
+    """Score .sv/.svh via scc — a per-FILE cyclomatic-style estimate.
+
+    No open-source tool reports per-function/always-block complexity for
+    SystemVerilog (verible-verilog-lint has no complexity rule; lizard and
+    svlint don't cover it), so this is a clearly-labeled per-file proxy.
+    """
+    if not have("scc"):
+        return [], "scc not installed (run setup.sh — e.g. brew install scc)"
+    out = []
+    files = [str(Path(f).resolve()) for f in files]
+    for batch in chunked(files):
+        try:
+            r = subprocess.run(["scc", "--by-file", "--format", "json", *batch],
+                               capture_output=True, text=True, timeout=600)
+            for grp in json.loads(r.stdout or "[]"):
+                for f in grp.get("Files", []):
+                    out.append({"file": f.get("Location"), "function": "(whole file)",
+                                "line": None, "score": int(f.get("Complexity", 0))})
+        except Exception as e:  # noqa: BLE001
+            return out, f"scc error: {e}"
+    return out, None
+
+
 CLANG_RE = re.compile(
     r"^(.*?):(\d+):(\d+): warning: function '([^']+)' has cognitive complexity of (\d+)"
 )
@@ -232,6 +343,49 @@ def run_c_cpp(c_files, cpp_files, force_lizard):
     return recs, "cognitive", None
 
 
+# (language key, runner, metric label, honesty note printed when files matched)
+RUNNERS = [
+    ("python", run_python, "cognitive", None),
+    ("go", run_go, "cognitive", None),
+    ("ts", run_ts, "cognitive", None),
+    ("solidity", run_solidity, "cyclomatic",
+     "Solidity scored with solhint = CYCLOMATIC complexity (not cognitive); "
+     "functions with complexity 1 are not reported by solhint."),
+    ("sv", run_sv, "cyclomatic (per-file estimate)",
+     "SystemVerilog scored with scc = per-FILE cyclomatic-style estimate "
+     "(no open-source tool reports per-function complexity for SV)."),
+]
+
+
+def tag(recs, lang, metric):
+    for r in recs:
+        r["language"], r["metric"] = lang, metric
+    return recs
+
+
+def analyze(by_lang, force_lizard):
+    """Run every applicable analyzer; return (records, warnings, metric_notes)."""
+    records, warnings, notes = [], [], []
+    for lang, runner, metric, note in RUNNERS:
+        if not by_lang.get(lang):
+            continue
+        recs, err = runner(by_lang[lang])
+        records += tag(recs, lang, metric)
+        if err:
+            warnings.append(err)
+        if note and recs:
+            notes.append(note)
+    if by_lang.get("c") or by_lang.get("cpp"):
+        recs, metric, err = run_c_cpp(by_lang.get("c", []), by_lang.get("cpp", []), force_lizard)
+        records += tag(recs, "c/cpp", metric)
+        if err:
+            warnings.append(err)
+        if metric == "cyclomatic":
+            notes.append("C/C++ scored with lizard = CYCLOMATIC complexity (not cognitive). "
+                         "Install clang-tidy for true cognitive scores.")
+    return records, warnings, notes
+
+
 # --- reporting --------------------------------------------------------------
 
 def render(records, metric_note, top, threshold, warnings):
@@ -286,44 +440,18 @@ def main():
     ap.add_argument("paths", nargs="+", help="files or directories")
     ap.add_argument("--top", type=int, default=15, help="how many worst functions to list")
     ap.add_argument("--threshold", type=int, default=0, help="only list functions ≥ this score")
-    ap.add_argument("--lang", help="restrict to languages (comma list: python,go,ts,c,cpp)")
+    ap.add_argument("--lang", help="restrict to languages "
+                                   "(comma list: python,go,ts,c,cpp,solidity,sv)")
     ap.add_argument("--lizard", action="store_true", help="force lizard (cyclomatic) for C/C++")
     ap.add_argument("--json", action="store_true", help="emit machine-readable JSON")
     args = ap.parse_args()
 
-    only = set(args.lang.split(",")) if args.lang else None
+    only = None
+    if args.lang:
+        only = {LANG_ALIASES.get(l.strip(), l.strip()) for l in args.lang.split(",")}
     by_lang = collect(args.paths, only)
 
-    records, warnings, metric_notes = [], [], []
-
-    def tag(recs, lang, metric):
-        for r in recs:
-            r["language"], r["metric"] = lang, metric
-        return recs
-
-    if by_lang.get("python"):
-        recs, err = run_python(by_lang["python"])
-        records += tag(recs, "python", "cognitive")
-        if err:
-            warnings.append(err)
-    if by_lang.get("go"):
-        recs, err = run_go(by_lang["go"])
-        records += tag(recs, "go", "cognitive")
-        if err:
-            warnings.append(err)
-    if by_lang.get("ts"):
-        recs, err = run_ts(by_lang["ts"])
-        records += tag(recs, "ts", "cognitive")
-        if err:
-            warnings.append(err)
-    if by_lang.get("c") or by_lang.get("cpp"):
-        recs, metric, err = run_c_cpp(by_lang.get("c", []), by_lang.get("cpp", []), args.lizard)
-        records += tag(recs, "c/cpp", metric)
-        if err:
-            warnings.append(err)
-        if metric == "cyclomatic":
-            metric_notes.append("C/C++ scored with lizard = CYCLOMATIC complexity (not cognitive). "
-                                "Install clang-tidy for true cognitive scores.")
+    records, warnings, metric_notes = analyze(by_lang, args.lizard)
 
     if args.json:
         print(json.dumps({"records": records, "warnings": warnings}, indent=2))

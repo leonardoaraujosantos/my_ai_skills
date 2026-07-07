@@ -41,7 +41,7 @@ The merge is idempotent: the template lives between `<!-- my_ai_skills:global-ru
 | [app-showcase](#app-showcase) | Build a pitch deck or screenshot-driven manual from a live app | `playwright`, `gws` |
 | [bookmarks](#bookmarks) | Save URLs to Obsidian vault | `requests`, `beautifulsoup4` |
 | [code-review](#code-review) | Review code for architecture, security & test coverage | None |
-| [cognitive-complexity](#cognitive-complexity) | Measure & rank Cognitive Complexity to target refactors | `complexipy`, `gocognit`, `eslint-plugin-sonarjs`, `clang-tidy` |
+| [cognitive-complexity](#cognitive-complexity) | Measure & rank Cognitive Complexity to target refactors | `complexipy`, `gocognit`, `eslint-plugin-sonarjs`, `clang-tidy`, `solhint`, `scc` |
 | [convert-to-md](#convert-to-md) | Convert PDF/PPTX to Markdown | `pymupdf`, `python-pptx` |
 | [coolify](#coolify) | Manage Coolify deployments & env vars via API | None |
 | [csv-tools](#csv-tools) | CSV manipulation & conversion | None |
@@ -252,7 +252,7 @@ code-review/
 
 ## cognitive-complexity
 
-Measure Cognitive Complexity (the SonarSource metric) of C/C++, Python, Go, or TypeScript/JavaScript code and report a ranked, banded list of the most complex functions to target for refactoring. Wraps installed open-source analyzers — it does not re-implement the metric.
+Measure Cognitive Complexity (the SonarSource metric) of C/C++, Python, Go, TypeScript/JavaScript, Solidity, or SystemVerilog code and report a ranked, banded list of the most complex functions to target for refactoring. Wraps installed open-source analyzers — it does not re-implement the metric, and it labels honestly when a language's best available tool reports a different metric: Solidity uses solhint's per-function **cyclomatic** complexity; SystemVerilog uses scc's per-**file** cyclomatic estimate (no open-source tool provides per-function SV complexity — Verible's 60 lint rules include none).
 
 ### Installation
 
