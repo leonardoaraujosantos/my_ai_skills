@@ -19,6 +19,18 @@ Or symlink individual skills:
 ln -s /path/to/my_ai_skills/youtube-playlist ~/.claude/skills/youtube-playlist
 ```
 
+### Optional: global CLAUDE.md rules
+
+The repo also ships a template of global rules (commit style, code quality, verification habits) at [`global/CLAUDE.md`](global/CLAUDE.md). To install it into your `~/.claude/CLAUDE.md`:
+
+```bash
+bash scripts/install_global_claude.sh              # merge — keeps rules you already have
+bash scripts/install_global_claude.sh --overwrite  # replace the whole file
+bash scripts/install_global_claude.sh --dry-run    # preview
+```
+
+The merge is idempotent: the template lives between `<!-- my_ai_skills:global-rules -->` markers, so re-running after a `git pull` updates that block in place without touching your own rules.
+
 ---
 
 ## Skills Overview
@@ -2055,6 +2067,8 @@ git add . && git commit -m "Update skills" && git push
 ## CLAUDE.md Configuration
 
 Claude Code uses `CLAUDE.md` files to define rules, preferences, and project-specific instructions. These files are automatically read at the start of each session.
+
+> This repo ships a ready-made global rules template — see [Optional: global CLAUDE.md rules](#optional-global-claudemd-rules) above, or browse [`global/CLAUDE.md`](global/CLAUDE.md).
 
 ### File Locations
 
