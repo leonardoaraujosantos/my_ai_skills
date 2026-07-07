@@ -1,0 +1,21 @@
+* rlc_resonant.cir -- series RLC, AC sweep showing resonance (f0 = 1/(2*pi*sqrt(L*C)) ~ 1592 Hz)
+
+* --- edit these values ---
+.param RVAL=10           ; series resistance (sets damping; Q = sqrt(L/C)/R = 10 here)
+.param LVAL=10m          ; series inductance
+.param CVAL=1u           ; series capacitance
+
+V1 in 0 DC 0 AC 1        ; 1 V AC test source
+L1 in n1 {LVAL}          ; inductor in series
+C1 n1 out {CVAL}         ; capacitor in series
+R1 out 0 {RVAL}          ; output taken across R -> band-pass response, peak 0 dB at f0
+
+.control
+set wr_vecnames          ; first line of the wrdata file = column names
+set wr_singlescale       ; write the frequency column only once
+ac dec 40 10 1Meg        ; AC sweep: 40 points/decade, 10 Hz .. 1 MHz
+wrdata rlc_resonant.out vdb(out) vp(out)   ; gain [dB] and phase vs frequency
+echo Expect a 0 dB peak at f0 with -3 dB bandwidth f0/Q
+quit
+.endc
+.end

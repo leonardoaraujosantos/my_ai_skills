@@ -1,0 +1,19 @@
+* rc_lowpass.cir -- first-order RC low-pass filter, AC sweep (f_c = 1/(2*pi*R*C) ~ 159 Hz)
+
+* --- edit these values ---
+.param RVAL=10k          ; series resistance
+.param CVAL=100n         ; shunt capacitance; f_c = 1/(2*pi*RVAL*CVAL)
+
+V1 in 0 DC 0 AC 1        ; 1 V AC test source between node 'in' and ground (node 0)
+R1 in out {RVAL}         ; series resistor
+C1 out 0 {CVAL}          ; capacitor from output node to ground
+
+.control
+set wr_vecnames          ; first line of the wrdata file = column names
+set wr_singlescale       ; write the frequency column only once
+ac dec 40 1 10Meg        ; AC sweep: 40 points/decade, 1 Hz .. 10 MHz
+wrdata rc_lowpass.out vdb(out) vp(out)   ; dump gain [dB] and phase vs frequency
+echo Expect 0 dB passband, -3 dB at f_c, then -20 dB/decade rolloff
+quit
+.endc
+.end

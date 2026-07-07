@@ -1,0 +1,31 @@
+* opamp_inverting.cir -- inverting amplifier with ideal single-pole op-amp, AC sweep
+
+* --- edit these values ---
+.param RINVAL=1k         ; input resistor
+.param RFVAL=10k         ; feedback resistor; gain = -RF/RIN = -10 (20 dB)
+
+* Ideal single-pole op-amp subcircuit (VCVS-based):
+* open-loop gain A0 = 100k (100 dB), pole at 10 Hz -> GBW = 1 MHz.
+* Closed-loop -3 dB bandwidth ~ GBW / (1 + RF/RIN) ~ 91 kHz here.
+.subckt OPAMP1P inp inn out
+Rin inp inn 10Meg              ; differential input resistance
+E1  n1  0   inp inn 1e5        ; VCVS: open-loop gain A0 = 100 000
+R1  n1  n2  159.155k           ; R-C pole: fp = 1/(2*pi*R*C) = 10 Hz
+C1  n2  0   100n
+E2  out 0   n2 0 1             ; unity-gain buffered output
+.ends
+
+V1 in 0 DC 0 AC 1        ; 1 V AC test source
+R1 in vminus {RINVAL}    ; input resistor to the virtual-ground node
+RF vminus out {RFVAL}    ; feedback resistor
+X1 0 vminus out OPAMP1P  ; op-amp: non-inverting input grounded
+
+.control
+set wr_vecnames          ; first line of the wrdata file = column names
+set wr_singlescale       ; write the frequency column only once
+ac dec 40 1 100Meg       ; AC sweep: 40 points/decade, 1 Hz .. 100 MHz
+wrdata opamp_inverting.out vdb(out) vp(out)   ; closed-loop gain [dB] and phase
+echo Expect 20 dB flat gain, -3 dB near GBW/(1+RF/RIN), then -20 dB/decade
+quit
+.endc
+.end

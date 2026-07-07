@@ -1,0 +1,23 @@
+* mosfet_switch.cir -- NMOS low-side switch driving a resistive load, transient
+
+* --- edit these values ---
+.param VDDVAL=5          ; supply voltage
+.param RLVAL=100         ; load resistance (load current when on ~ VDD/RL)
+
+Vsup vdd 0 DC {VDDVAL}                 ; supply rail
+Vg gate 0 PULSE(0 5 1m 1u 1u 2m 4m)    ; gate drive: 0->5 V at t=1 ms, on 2 ms, period 4 ms
+RL1 vdd drain {RLVAL}                  ; load between supply and drain
+M1 drain gate 0 0 SWN W=1m L=1u        ; NMOS: drain gate source bulk (source+bulk grounded)
+
+* generic level-1 NMOS: Vth = 2 V, so a 5 V gate drives it hard on
+.model SWN NMOS(level=1 VTO=2 KP=50u LAMBDA=0.01)
+
+.control
+set wr_vecnames          ; first line of the wrdata file = column names
+set wr_singlescale       ; write the time column only once
+tran 10u 8m              ; transient: 10 us step, 8 ms total (two gate periods)
+wrdata mosfet_switch.out v(gate) v(drain)   ; gate command and switched node vs time
+echo Expect v(drain) = VDD when gate low, near 0 V (Ron * Iload) when gate high
+quit
+.endc
+.end

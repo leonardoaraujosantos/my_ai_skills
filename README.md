@@ -33,10 +33,12 @@ ln -s /path/to/my_ai_skills/youtube-playlist ~/.claude/skills/youtube-playlist
 | [convert-to-md](#convert-to-md) | Convert PDF/PPTX to Markdown | `pymupdf`, `python-pptx` |
 | [coolify](#coolify) | Manage Coolify deployments & env vars via API | None |
 | [csv-tools](#csv-tools) | CSV manipulation & conversion | None |
+| [datasheet](#datasheet) | Digest component datasheets into structured part cards; compare parts | None |
 | [dep-audit](#dep-audit) | Multi-ecosystem dependency vulnerability & outdated audit with upgrade plan | Per-ecosystem: `npm`, `pip-audit`, `govulncheck`, `cargo-audit` |
 | [docker-tools](#docker-tools) | Docker/Compose debugging & maintenance recipes | `docker` CLI |
 | [elevenlabs](#elevenlabs) | TTS, SFX, voice conversion, music & audio isolation | `ELEVENLABS_API_KEY` env var |
 | [email-triage](#email-triage) | Gmail inbox triage: classify, summarize, draft replies, batch archive | `@googleworkspace/cli` (npm) |
+| [eng-calc](#eng-calc) | EE + mechanical calculators: dividers, E-series, filters, AWG, thermal, beams, bolts | None |
 | [finance](#finance) | Personal finance from bank/card CSV exports: ledger, rules, reports | None |
 | [flashcards](#flashcards) | Flashcards from study notes for Anki or Obsidian | None (optional: `genanki`) |
 | [generate-image](#generate-image) | AI media studio: images, video, music, TTS, analysis | `GEMINI_API_KEY` env var |
@@ -45,6 +47,9 @@ ln -s /path/to/my_ai_skills/youtube-playlist ~/.claude/skills/youtube-playlist
 | [image-tools](#image-tools) | Image manipulation | `Pillow` |
 | [journal](#journal) | Daily journaling to Obsidian | None |
 | [json-tools](#json-tools) | JSON manipulation & queries | None (optional: `pyyaml`) |
+| [kicad-tools](#kicad-tools) | KiCad CLI: ERC/DRC checks, BOM/netlist, gerbers & fab outputs | `kicad-cli` (KiCad 8/9) |
+| [latex-tools](#latex-tools) | Compile, scaffold & debug LaTeX; IEEE/report/TikZ templates | `latexmk` (MacTeX) or `tectonic` |
+| [lit-review](#lit-review) | Systematic literature review: matrix, contradictions, cited survey note | None |
 | [markitdown-hook](#markitdown-hook) | Auto-convert PDF/Office docs to Markdown on Read (token saver) | `markitdown[all]` (auto-installed) |
 | [mcp-client](#mcp-client) | Test, explore & manage MCP servers | `mcp` (pip) |
 | [mermaid](#mermaid) | Create cross-platform Mermaid diagrams | None |
@@ -56,6 +61,8 @@ ln -s /path/to/my_ai_skills/youtube-playlist ~/.claude/skills/youtube-playlist
 | [pentest](#pentest) | Authorized defensive security testing — 40 vuln playbooks + recon + Shannon | Per-playbook CLI tools (curl, ffuf, nuclei…); Docker for Shannon |
 | [pg-client](#pg-client) | PostgreSQL client with graph & RLS support | `psycopg2` |
 | [release-notes](#release-notes) | Changelog / release notes from git history between refs | `gh` (fallback: github skill) |
+| [rf-tools](#rf-tools) | RF calculators: link budget, VSWR, Friis NF, matching, microstrip, attenuators | None |
+| [spice](#spice) | ngspice batch simulation: AC/tran/DC/op, circuit templates, CSV + ASCII plots | `ngspice` |
 | [study-this](#study-this) | Process study references & manage Obsidian study notes | `@googleworkspace/cli` (npm), `yt-dlp` |
 | [sync-skills](#sync-skills) | Sync skills to GitHub repo | None |
 | [transcribe](#transcribe) | Local Whisper speech-to-text for audio/video (txt/srt/vtt/json/md) | `ffmpeg` + a Whisper backend |
@@ -415,6 +422,27 @@ csv-tools/
 
 ---
 
+## datasheet
+
+Digest component datasheets into a structured, reusable "part card": absolute maximum ratings, recommended operating conditions, key electrical characteristics *with test conditions*, pinout, application notes, and gotchas — every value copied exactly (min/typ/max discipline, page citations, `⚠ verify` markers instead of guesses). Compare mode produces a worst-case side-by-side table with a "choose X if / choose Y if" verdict. Part cards save to the vault under `Engineering/Parts/`.
+
+### Usage
+
+```bash
+/datasheet ~/Downloads/lm317.pdf --save
+/datasheet TPS7A47                      # finds the official PDF by part number
+/datasheet TPS7A47 compare LT3045       # side-by-side on worst-case specs
+```
+
+### Files
+
+```
+datasheet/
+└── SKILL.md
+```
+
+---
+
 ## dep-audit
 
 Multi-ecosystem dependency audit: scan for vulnerable and outdated packages and produce a prioritized upgrade plan. Detects ecosystems by manifest/lockfile (npm/pnpm/yarn, Python, Go, Rust, Ruby, PHP) and drives the native scanners (`npm audit`, `pip-audit`, `govulncheck`, `cargo audit`). Reports and plans only — never runs `npm audit fix` or upgrades without approval; missing scanners are reported as "not scanned", never silently skipped.
@@ -523,6 +551,36 @@ Safety rules: never sends without showing the draft and getting approval, never 
 ```
 email-triage/
 └── SKILL.md
+```
+
+---
+
+## eng-calc
+
+Everyday electrical + mechanical engineering calculators. All formulas verified against hand calculations. SI suffixes (k, M, m, u, n, p) accepted everywhere.
+
+**Electrical**: `divider` (with best E24/E96 pair synthesis), `eseries`, `rc`/`rl`/`lc`, `led`, `ohm`, `awg` (AWG 0000–40 table), `tolerance` (worst-case + RSS), `thermal` (junction temp through a RθJC/RθCS/RθSA chain), `battery` (incl. duty-cycle phases).
+**Mechanical**: `beam` (4 loading cases, `--rect` section helper), `bolt` (metric M3–M20, grades 8.8/10.9/12.9), `gear`.
+
+### Usage
+
+```bash
+SKILL="$HOME/.claude/skills/eng-calc"
+
+python3 "$SKILL/eng_calc.py" divider --vin 12 --vout 3.3 --rtotal 10k --series E24
+python3 "$SKILL/eng_calc.py" rc --r 10k --c 100n          # fc = 159.2 Hz
+python3 "$SKILL/eng_calc.py" awg 24
+python3 "$SKILL/eng_calc.py" thermal --p 2.5 --ta 40 --rth 3.1,0.5,4.2 --tjmax 125
+python3 "$SKILL/eng_calc.py" beam --case cantilever-end --l 0.5 --e 200e9 --i 8.3e-9 --p 100
+python3 "$SKILL/eng_calc.py" bolt --size M6 --grade 8.8
+```
+
+### Files
+
+```
+eng-calc/
+├── SKILL.md
+└── eng_calc.py
 ```
 
 ---
@@ -963,6 +1021,76 @@ data.users[0].name # combined
 json-tools/
 ├── SKILL.md
 └── json_tools.py
+```
+
+---
+
+## kicad-tools
+
+Drive KiCad from the command line via `kicad-cli`: ERC/DRC design checks with parsed JSON reports (grouped by severity, explained in plain language), schematic exports (PDF/SVG/netlist/BOM), PCB fab outputs (gerbers, drill, pick-and-place, a "standard fab package" zip recipe with checklist), and board renders. Read-only on project files; flags are confirmed with `--help` at runtime since they vary across KiCad 7/8/9.
+
+### Usage
+
+```bash
+/kicad-tools board.kicad_pcb drc        # run DRC, explain violations
+/kicad-tools sch.kicad_sch bom
+/kicad-tools project.kicad_pro gerbers  # full fab package
+```
+
+### Files
+
+```
+kicad-tools/
+└── SKILL.md
+```
+
+---
+
+## latex-tools
+
+Compile, scaffold, and debug LaTeX documents: the `latexmk` compile-fix loop (with an error→fix table for the common failures), ready-to-compile templates, BibTeX hygiene (Crossref/arXiv fetching, key conventions), and siunitx/math snippets for EE/RF notation. All four templates compile cleanly with MacTeX (TeX Live 2025).
+
+### Installation
+
+```bash
+brew install tectonic        # minimal single binary — or MacTeX for the full distribution
+```
+
+### Usage
+
+```bash
+/latex-tools compile paper.tex
+/latex-tools new ieee-paper          # also: report, letter, tikz-examples
+/latex-tools fix paper.tex           # first-error-first log diagnosis
+```
+
+### Files
+
+```
+latex-tools/
+├── SKILL.md
+└── templates/{ieee-paper.tex, refs.bib, report.tex, letter.tex, tikz-examples.tex}
+```
+
+---
+
+## lit-review
+
+Systematic literature review: scope the question, gather papers (local PDF folders, or paper search via the Firecrawl research tools with arXiv/Semantic Scholar fallback, plus one-hop citation snowballing), extract each paper into a fixed schema saved as a vault note under `Papers/`, build a literature matrix, surface agreements and contradictions (both sides cited — never averaged away), and synthesize a fully-cited survey note to `Literature Reviews/<topic>.md`. Every claim traces to a specific paper; unread/paywalled papers are listed as "Not reviewed", never cited blind.
+
+### Usage
+
+```bash
+/lit-review "sub-GHz LPWAN interference mitigation" --depth thorough
+/lit-review ~/papers/beamforming/          # folder of PDFs
+/lit-review <arxiv-urls...> --no-save
+```
+
+### Files
+
+```
+lit-review/
+└── SKILL.md
 ```
 
 ---
@@ -1511,6 +1639,68 @@ Generate a changelog / release notes from git history between two refs: resolves
 ```
 release-notes/
 └── SKILL.md
+```
+
+---
+
+## rf-tools
+
+RF/microwave engineering calculators — every command verified against textbook reference values. SI suffixes accepted on frequencies and distances.
+
+Commands: `fspl`, `linkbudget` (with sensitivity margin), `vswr` (VSWR ↔ return loss ↔ |Γ| ↔ mismatch loss), `db` (dBm ↔ W ↔ V rms ↔ dBµV), `friis` (cascaded noise figure + noise floor), `match` (L-network synthesis), `microstrip` (Hammerstad-Jensen synthesis/analysis), `wavelength`, `attenuator` (pi/tee with E24 picks), `skin`.
+
+### Usage
+
+```bash
+SKILL="$HOME/.claude/skills/rf-tools"
+
+python3 "$SKILL/rf_tools.py" fspl -f 2.4G -d 100m                     # 80.05 dB
+python3 "$SKILL/rf_tools.py" linkbudget --ptx 20 --gtx 2 --grx 2 -f 2.4G -d 100m --losses 2 --sens -90
+python3 "$SKILL/rf_tools.py" vswr 2.0                                 # RL 9.54 dB, |Γ| 0.333
+python3 "$SKILL/rf_tools.py" friis --stage 15,1 --stage=-7,7 --bw 1M  # NF 1.42 dB
+python3 "$SKILL/rf_tools.py" microstrip -z 50 --er 4.4 -h 1.6mm       # W = 3.06 mm
+python3 "$SKILL/rf_tools.py" attenuator -a 3 --topology pi
+```
+
+### Files
+
+```
+rf-tools/
+├── SKILL.md
+└── rf_tools.py
+```
+
+---
+
+## spice
+
+Run analog circuit simulations with ngspice in batch mode: AC/transient/DC sweeps and operating points from your netlists or bundled templates, results parsed to CSV with a stdlib ASCII plotter (log-x Bode rolloffs, transient shapes) — no GUI needed. Templates: RC lowpass, divider, series RLC, diode rectifier, MOSFET switch, ideal-op-amp inverting amp — each simulated and checked against theory (e.g. RC −3 dB measured at 159.14 Hz vs 159.15 Hz expected).
+
+### Installation
+
+```bash
+brew install ngspice
+```
+
+### Usage
+
+```bash
+SPICE="$HOME/.claude/skills/spice/scripts/spice_run.py"
+
+python3 "$SPICE" template list
+python3 "$SPICE" template rc_lowpass -o my_filter.cir   # edit values, then:
+python3 "$SPICE" run my_filter.cir -o out.csv
+python3 "$SPICE" plot out.csv --log-x --db vdb_out
+python3 "$SPICE" op divider.cir                          # node voltages table
+```
+
+### Files
+
+```
+spice/
+├── SKILL.md
+├── scripts/spice_run.py
+└── templates/{rc_lowpass, divider, rlc_resonant, diode_rectifier, mosfet_switch, opamp_inverting}.cir
 ```
 
 ---

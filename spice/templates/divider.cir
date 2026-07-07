@@ -1,0 +1,17 @@
+* divider.cir -- resistive voltage divider, DC operating point
+
+* --- edit these values ---
+.param VIN=5             ; supply voltage
+.param R1VAL=10k         ; top resistor (from 'in' to 'out')
+.param R2VAL=10k         ; bottom resistor; Vout = VIN * R2 / (R1 + R2) = 2.5 V here
+
+V1 in 0 DC {VIN}         ; DC source between node 'in' and ground (node 0)
+R1 in out {R1VAL}        ; top of the divider
+R2 out 0 {R2VAL}         ; bottom of the divider
+
+.control
+op                       ; solve the DC operating point
+print all                ; print every node voltage and source branch current
+quit
+.endc
+.end
