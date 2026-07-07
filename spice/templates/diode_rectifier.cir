@@ -1,0 +1,25 @@
+* diode_rectifier.cir -- half-wave rectifier with smoothing capacitor, transient
+
+* --- edit these values ---
+.param VAMP=10           ; input sine amplitude
+.param FREQ=50           ; input frequency [Hz]
+.param CFVAL=100u        ; smoothing capacitor; ripple ~ Iload / (FREQ * CFVAL)
+.param RLVAL=1k          ; load resistance
+
+V1 in 0 SIN(0 {VAMP} {FREQ})   ; sine source: 0 V offset, VAMP peak, FREQ Hz
+D1 in out D1N4148              ; rectifier diode (model below)
+CF1 out 0 {CFVAL}              ; smoothing capacitor across the load
+RL1 out 0 {RLVAL}              ; load resistor
+
+* inline 1N4148 small-signal diode model
+.model D1N4148 D(Is=4.35n Rs=0.64 N=1.9 Cjo=4p M=0.33 Vj=0.5 Bv=100 Ibv=100u Tt=3.5n)
+
+.control
+set wr_vecnames          ; first line of the wrdata file = column names
+set wr_singlescale       ; write the time column only once
+tran 100u 100m           ; transient: 100 us step, 100 ms total (5 cycles at 50 Hz)
+wrdata diode_rectifier.out v(in) v(out)   ; input sine and rectified output vs time
+echo Expect v(out) ~ VAMP - 0.7 V with sawtooth ripple ~ Iload/(FREQ*CFVAL)
+quit
+.endc
+.end

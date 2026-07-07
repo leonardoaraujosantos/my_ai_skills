@@ -1,0 +1,38 @@
+% Plain formal letter template.
+% Compile: latexmk -pdf letter.tex
+\documentclass[11pt]{letter}
+
+\usepackage[margin=2.5cm]{geometry}
+
+\signature{Your Name\\Your Title}
+\address{Your Name\\
+         Street Address 123\\
+         City, State ZIP\\
+         you@example.com}
+
+\begin{document}
+
+\begin{letter}{Recipient Name\\
+               Company or Institution\\
+               Street Address 456\\
+               City, State ZIP}
+
+\opening{Dear Dr.\ Recipient,}
+
+First paragraph: state the purpose of the letter in one or two
+sentences.
+
+Second paragraph: supporting details, context, or the specific
+request. Keep paragraphs short; a formal letter should rarely exceed
+one page.
+
+Closing paragraph: state the expected next step or how you can be
+reached, and thank the recipient.
+
+\closing{Sincerely,}
+
+\encl{Attachment description (remove if none)}
+\cc{Other Recipient (remove if none)}
+
+\end{letter}
+\end{document}

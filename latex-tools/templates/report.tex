@@ -1,0 +1,103 @@
+% Technical / engineering report template.
+% Compile: latexmk -pdf report.tex   (two passes for TOC/refs, handled automatically)
+\documentclass[11pt,a4paper]{report}
+
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{siunitx}
+\usepackage{caption}
+\usepackage[hidelinks]{hyperref}
+
+\sisetup{per-mode=symbol}
+
+\title{\textbf{Technical Report Title}\\[0.5em]
+       \large Subsystem or Project Name}
+\author{Author Name\\ \small Organization / Team}
+\date{\today}
+
+\begin{document}
+
+% ---------- Title page ----------
+\begin{titlepage}
+  \centering
+  \vspace*{3cm}
+  {\Huge\bfseries Technical Report Title\par}
+  \vspace{1em}
+  {\Large Subsystem or Project Name\par}
+  \vspace{3cm}
+  {\large Author Name\par}
+  {\large Organization / Team\par}
+  \vfill
+  {\large Document ID: TR-2026-001 \quad Rev.\ A\par}
+  {\large \today\par}
+\end{titlepage}
+
+\tableofcontents
+
+\chapter{Introduction}
+\section{Purpose}
+State what this report documents and for whom.
+
+\section{Scope}
+What is covered, what is explicitly out of scope.
+
+\chapter{System Description}
+\section{Overview}
+Reference figures as Figure~\ref{fig:block}. Replace the placeholder
+rule with \verb|\includegraphics[width=0.8\textwidth]{block.pdf}|.
+\begin{figure}[htb]
+  \centering
+  \rule{0.6\textwidth}{3cm}% placeholder
+  \caption{System block diagram (placeholder).}
+  \label{fig:block}
+\end{figure}
+
+\section{Key Parameters}
+Units via siunitx: supply voltage \SI{3.3}{\volt}, clock
+\SI{125}{\mega\hertz}, power \SI{1.2}{\watt}, data rate
+\SI{10}{\giga\bit\per\second}.
+
+\begin{table}[htb]
+  \centering
+  \caption{Electrical characteristics.}
+  \label{tab:specs}
+  \begin{tabular}{l S[table-format=3.1] l}
+    \toprule
+    {Parameter} & {Value} & {Unit} \\
+    \midrule
+    Supply voltage    & 3.3   & \si{\volt} \\
+    Active current    & 210.0 & \si{\milli\ampere} \\
+    Clock frequency   & 125.0 & \si{\mega\hertz} \\
+    Sleep current     & 0.8   & \si{\micro\ampere} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\chapter{Analysis}
+\section{Model}
+\begin{equation}
+  V_\mathrm{out} = V_\mathrm{in} \frac{R_2}{R_1 + R_2}
+  \label{eq:divider}
+\end{equation}
+Equation~\eqref{eq:divider} gives the unloaded divider output.
+
+\section{Results}
+Summarize measurements; refer to Table~\ref{tab:specs}.
+
+\chapter{Conclusions and Recommendations}
+Findings first, then concrete recommendations as a numbered list.
+\begin{enumerate}
+  \item Recommendation one.
+  \item Recommendation two.
+\end{enumerate}
+
+\appendix
+\chapter{Test Setup Details}
+Instrument list, firmware versions, environmental conditions.
+
+\chapter{Raw Data}
+Long tables and logs go here, out of the main narrative.
+
+\end{document}

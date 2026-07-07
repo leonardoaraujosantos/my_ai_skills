@@ -1,0 +1,108 @@
+% IEEE conference paper template (IEEEtran, ships with TeX Live).
+% Compile: latexmk -pdf ieee-paper.tex   (runs bibtex automatically)
+% Needs refs.bib in the same directory.
+\documentclass[conference]{IEEEtran}
+
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{cite}
+
+\begin{document}
+
+\title{Paper Title Goes Here:\\ A Subtitle If Needed}
+
+\author{
+  \IEEEauthorblockN{First Author}
+  \IEEEauthorblockA{Department of Electrical Engineering\\
+    University Name\\
+    City, Country\\
+    first.author@example.edu}
+  \and
+  \IEEEauthorblockN{Second Author}
+  \IEEEauthorblockA{Research Lab\\
+    Company Name\\
+    City, Country\\
+    second.author@example.com}
+}
+
+\maketitle
+
+\begin{abstract}
+One paragraph, roughly 150--250 words. State the problem, the approach,
+and the headline result with a number. Avoid citations and undefined
+acronyms in the abstract.
+\end{abstract}
+
+\begin{IEEEkeywords}
+keyword one, keyword two, keyword three
+\end{IEEEkeywords}
+
+\section{Introduction}
+Motivate the problem and summarize contributions. Cite prior work
+like this~\cite{shannon1948communication} or grouped~\cite{he2016resnet,vaswani2017attention}.
+
+The contributions of this paper are:
+\begin{itemize}
+  \item First contribution, stated as a claim.
+  \item Second contribution.
+  \item Third contribution, with the key metric.
+\end{itemize}
+
+\section{Related Work}
+Group prior work by theme, not chronologically. Deep residual
+networks~\cite{he2016resnet} and attention
+mechanisms~\cite{vaswani2017attention} are typical anchors.
+
+\section{Method}
+\subsection{Problem Formulation}
+Inline math: let $x \in \mathbb{R}^n$ denote the input. Display math
+with a number:
+\begin{equation}
+  y = \sigma\!\left( W x + b \right),
+  \label{eq:model}
+\end{equation}
+and refer back to it as \eqref{eq:model}. For multi-line derivations:
+\begin{align}
+  P_\mathrm{out} &= P_\mathrm{in} \, G_1 G_2 \label{eq:gain}\\
+                 &= P_\mathrm{in} \cdot 10^{(G_{1,\mathrm{dB}} + G_{2,\mathrm{dB}})/10}.
+\end{align}
+
+\subsection{Figure Example}
+Reference figures as Fig.~\ref{fig:arch}. Replace the placeholder
+\verb|\rule| with \verb|\includegraphics[width=\columnwidth]{arch.pdf}|.
+\begin{figure}[t]
+  \centering
+  \rule{0.8\columnwidth}{3cm}% placeholder box
+  \caption{System architecture. Replace this placeholder with an
+  \texttt{includegraphics} call.}
+  \label{fig:arch}
+\end{figure}
+
+\section{Results}
+Reference tables as Table~\ref{tab:results}.
+\begin{table}[t]
+  \caption{Comparison With Prior Work}
+  \label{tab:results}
+  \centering
+  \begin{tabular}{lcc}
+    \toprule
+    Method & Accuracy (\%) & Params (M) \\
+    \midrule
+    Baseline~\cite{he2016resnet} & 92.1 & 25.6 \\
+    Prior art~\cite{vaswani2017attention} & 93.4 & 65.0 \\
+    \textbf{Ours} & \textbf{94.7} & 24.1 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Conclusion}
+Restate the contribution and result; one sentence of future work.
+
+\section*{Acknowledgment}
+Optional. Funding sources and colleagues.
+
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+
+\end{document}
