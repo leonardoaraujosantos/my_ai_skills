@@ -67,6 +67,7 @@ The merge is idempotent: the template lives between `<!-- my_ai_skills:global-ru
 | [markitdown-hook](#markitdown-hook) | Auto-convert PDF/Office docs to Markdown on Read (token saver) | `markitdown[all]` (auto-installed) |
 | [mcp-client](#mcp-client) | Test, explore & manage MCP servers | `mcp` (pip) |
 | [mermaid](#mermaid) | Create cross-platform Mermaid diagrams | None |
+| [mobile-device-testing](#mobile-device-testing) | Tests on real devices & device farms: XCUITest on hardware, Maestro, Firebase Test Lab | Xcode / Android SDK (optional: maestro, gcloud) |
 | [mobile-profiling](#mobile-profiling) | CLI profiling: Instruments/xctrace (iOS), Perfetto/Macrobenchmark (Android) | Xcode / Android SDK+NDK |
 | [mobile-publish](#mobile-publish) | App Store & Google Play release pipelines, TestFlight/tracks, review playbooks | Xcode / Android SDK (optional: fastlane, bundletool) |
 | [notebooklm](#notebooklm) | Full Google NotebookLM API: notebooks, sources, artifacts | `notebooklm-py` (pip) |
@@ -1315,6 +1316,32 @@ When invoked with `/mermaid fix <file>`, the skill scans all Mermaid blocks in t
 ```
 mermaid/
 └── SKILL.md
+```
+
+---
+
+## mobile-device-testing
+
+Run tests on real connected devices and cloud device farms (verified July 2026). iOS hardware: the prerequisite checklist that eats all the time (Developer Mode, pairing/trust, wireless connection, unlocked screen), XCUITest on device with runner-app signing and an error→fix table, build-once/run-anywhere `.xctestrun` distribution, and devicectl's actual scope (no test-run subcommand). Maestro 2.6: cross-platform YAML UI flows with the full command/selector cheat sheet, CI sharding, and the critical caveat that physical iOS devices are NOT supported (Android hardware + iOS simulators only). Device farms: Firebase Test Lab for Android (instrumentation/robo, AAB support, quotas) and iOS (XCTest zip format), Gradle-managed devices with ATD images, and one-line routing for AWS Device Farm / BrowserStack / Sauce Labs. A routing matrix maps each target (real iPhone, real Android, farm, CI) to the frameworks that can actually drive it.
+
+### Usage
+
+```bash
+/mobile-device-testing run tests on my iPhone
+/mobile-device-testing write a Maestro smoke flow
+/mobile-device-testing run this on Firebase Test Lab
+/mobile-device-testing test runner won't install on device
+```
+
+### Files
+
+```
+mobile-device-testing/
+├── SKILL.md
+└── references/
+    ├── ios-device.md
+    ├── maestro.md
+    └── device-farms.md
 ```
 
 ---
