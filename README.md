@@ -26,6 +26,7 @@ mindmap
       code-review
       cognitive-complexity
       dep-audit
+      foundry-tools
       github
       openspec
       openspec-baseline
@@ -699,6 +700,49 @@ python3 "$SKILL/flashcards.py" stats cards.md
 flashcards/
 ├── SKILL.md
 └── flashcards.py
+```
+
+---
+
+## foundry-tools
+
+Solidity smart-contract development, testing, and security workflows with the Foundry toolchain (`forge`, `cast`, `anvil`, `chisel`) plus Slither static analysis. Built around this repo's rule that Solidity is security-critical: checks-effects-interactions, reentrancy/access-control review, a pinned pragma, and tests for every change. Deploys and transactions are gated behind explicit approval — the skill defaults to dry-runs, `cast call`, and local anvil/fork sandboxes, and only broadcasts after you confirm.
+
+### Installation
+
+```bash
+curl -L https://foundry.paradigm.xyz | bash && foundryup   # forge, cast, anvil, chisel
+pip install slither-analyzer                                # static analysis (needs solc via solc-select)
+```
+
+### Usage
+
+```bash
+/foundry-tools test this vault contract        # forge test (unit/fuzz/invariant/fork), gas, coverage
+/foundry-tools slither this                     # static analysis + manual review checklist
+/foundry-tools cast call balanceOf on 0x...     # read chain state / decode calldata
+/foundry-tools deploy to sepolia                # gated: rehearses on a fork, broadcasts only after approval
+```
+
+### Reference files
+
+| Topic | File |
+|-------|------|
+| Build, unit/fuzz/invariant/fork tests, gas, coverage, debugging | `references/testing.md` |
+| Chain interaction, encoding/decoding, storage, tx tracing | `references/cast.md` |
+| Deploy scripts, broadcast, verify, anvil, keystores | `references/deployment.md` |
+| Slither + manual security review checklist | `references/security.md` |
+
+### Files
+
+```
+foundry-tools/
+├── SKILL.md
+└── references/
+    ├── testing.md
+    ├── cast.md
+    ├── deployment.md
+    └── security.md
 ```
 
 ---
