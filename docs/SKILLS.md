@@ -21,6 +21,7 @@ Complete table of every skill in this repository. Each skill name links to its d
 | [eng-calc](../README.md#eng-calc) | EE + mechanical calculators: dividers, E-series, filters, AWG, thermal, beams, bolts | None |
 | [finance](../README.md#finance) | Personal finance from bank/card CSV exports: ledger, rules, reports | None |
 | [flashcards](../README.md#flashcards) | Flashcards from study notes for Anki or Obsidian | None (optional: `genanki`) |
+| [foundry-tools](../README.md#foundry-tools) | Solidity dev/test/security with Foundry (forge/cast/anvil) + Slither; deploys gated | `foundry` (`foundryup`); optional `slither-analyzer` |
 | [generate-image](../README.md#generate-image) | AI media studio: images, video, music, TTS, analysis | `GEMINI_API_KEY` env var |
 | [github](../README.md#github) | Resilient GitHub REST access when api.github.com is blocked | `gh`, `curl`, `jq` |
 | [gws](../README.md#gws) | Google Workspace CLI integration | `@googleworkspace/cli` (npm) |
