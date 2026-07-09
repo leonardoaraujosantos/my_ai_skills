@@ -1179,6 +1179,27 @@ lit-review/
 
 ---
 
+## markitdown-hook
+
+Install a harness-level `PreToolUse(Read)` hook that auto-converts binary documents (PDF, DOCX, PPTX, XLSX, EPub) to Markdown **before** Claude reads them — saving tokens. `Read` renders PDF pages as images at high token cost; the hook intercepts the read, converts the file locally with `markitdown`, and redirects Claude to a sibling `.converted.md`. Complements the on-demand `convert-to-md` / `pdf-tools` skills by making conversion automatic on every read.
+
+### Installation
+
+```bash
+bash ~/.claude/skills/markitdown-hook/scripts/install.sh
+# then restart Claude Code and run /hooks to confirm
+```
+
+Idempotent. Creates a pinned `markitdown[all]` venv (Python 3.10–3.13), copies the hook to `~/.claude/hooks/`, and safe-merges a `PreToolUse(Read)` entry into `~/.claude/settings.json`.
+
+### Notes
+
+- Documents only — images/audio are left on normal `Read`. Cached, size-guarded (>50 MB skipped), never clobbers user files, and skips sensitive paths (`.ssh`, `.aws`, `.env`, …).
+- Dragged/pasted files bypass the hook (Claude Code attaches them before any hook runs) — ask "read `<path>`" for those.
+- Treats converted text as untrusted data, not instructions (prompt-injection aware).
+
+---
+
 ## mcp-client
 
 Test, explore, and manage MCP (Model Context Protocol) servers. Verify connectivity, list tools/resources/prompts, execute tools, benchmark performance, manage auth tokens, and register servers. Supports stdio, SSE, and Streamable HTTP transports.
@@ -1263,27 +1284,6 @@ mcp-client/
 └── scripts/
     └── mcp_client.py
 ```
-
----
-
-## markitdown-hook
-
-Install a harness-level `PreToolUse(Read)` hook that auto-converts binary documents (PDF, DOCX, PPTX, XLSX, EPub) to Markdown **before** Claude reads them — saving tokens. `Read` renders PDF pages as images at high token cost; the hook intercepts the read, converts the file locally with `markitdown`, and redirects Claude to a sibling `.converted.md`. Complements the on-demand `convert-to-md` / `pdf-tools` skills by making conversion automatic on every read.
-
-### Installation
-
-```bash
-bash ~/.claude/skills/markitdown-hook/scripts/install.sh
-# then restart Claude Code and run /hooks to confirm
-```
-
-Idempotent. Creates a pinned `markitdown[all]` venv (Python 3.10–3.13), copies the hook to `~/.claude/hooks/`, and safe-merges a `PreToolUse(Read)` entry into `~/.claude/settings.json`.
-
-### Notes
-
-- Documents only — images/audio are left on normal `Read`. Cached, size-guarded (>50 MB skipped), never clobbers user files, and skips sensitive paths (`.ssh`, `.aws`, `.env`, …).
-- Dragged/pasted files bypass the hook (Claude Code attaches them before any hook runs) — ask "read `<path>`" for those.
-- Treats converted text as untrusted data, not instructions (prompt-injection aware).
 
 ---
 
@@ -1706,7 +1706,7 @@ Supports **black-box** (only a backend or web URL — no source, often no creds)
 - **`_shared/`** — finding schema, tool profiles (5 allowlists; aggressive tools like sqlmap/metasploit/hydra/nikto are forbidden by design), validation checklist.
 - **`recon/web-check/`** — self-hosted [web-check](https://github.com/lissy93/web-check) container + scripts for a fast first-pass.
 - **`shannon/shannon-mcp-wrapper.sh`** — launches Shannon as an MCP server, reading your Claude Code OAuth token dynamically (no API key management). Staging/localhost only.
-- **`scripts/validate-skills.sh`** — structural validator (sections, scope reference, forbidden-tool catch). Currently 40 playbooks, 0 errors.
+- **`scripts/validate-skills.sh`** — structural validator (sections, scope reference, forbidden-tool catch). Currently 41 playbooks, 0 errors.
 
 ### Usage
 

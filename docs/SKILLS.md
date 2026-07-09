@@ -43,7 +43,7 @@ Complete table of every skill in this repository. Each skill name links to its d
 | [openspec-baseline](../README.md#openspec-baseline) | Onboard a brownfield codebase onto OpenSpec + CI | `openspec` CLI |
 | [payments](../README.md#payments) | Payment/subscription dev & debugging for Stripe, iOS StoreKit, Play Billing | None (optional: Stripe CLI, Stripe MCP) |
 | [pdf-tools](../README.md#pdf-tools) | PDF manipulation | `pypdf` |
-| [pentest](../README.md#pentest) | Authorized defensive security testing — 40 vuln playbooks + recon + Shannon | Per-playbook CLI tools (curl, ffuf, nuclei…); Docker for Shannon |
+| [pentest](../README.md#pentest) | Authorized defensive security testing — 41 vuln/recon playbooks + Shannon | Per-playbook CLI tools (curl, ffuf, nuclei…); Docker for Shannon |
 | [pg-client](../README.md#pg-client) | PostgreSQL client with graph & RLS support | `psycopg2` |
 | [release-notes](../README.md#release-notes) | Changelog / release notes from git history between refs | `gh` (fallback: github skill) |
 | [rf-tools](../README.md#rf-tools) | RF calculators: link budget, VSWR, Friis NF, matching, microstrip, attenuators | None |

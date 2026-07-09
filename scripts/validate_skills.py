@@ -9,7 +9,7 @@ Checks (hard errors, exit 1):
     and the table lists no skill that doesn't exist
   * every skill appears in the README "Skills at a Glance" mermaid mindmap,
     and the mindmap lists no skill that doesn't exist
-  * every skill has a `## <name>` body section in the README
+  * every skill has a `## <name>` body section in the README, in alphabetical order
 
 Warnings (exit 0): missing `argument-hint`.
 
@@ -98,10 +98,13 @@ def main() -> int:
             if name not in skill_dirs:
                 errors.append(f"README.md: mindmap lists '{name}' but there is no such skill directory")
 
-    sections = set(re.findall(r"^## ([a-z0-9-]+)\s*$", readme, re.MULTILINE))
+    section_list = re.findall(r"^## ([a-z0-9-]+)\s*$", readme, re.MULTILINE)
+    sections = set(section_list)
     for name in skill_dirs:
         if name not in sections:
             errors.append(f"README.md: skill '{name}' has no '## {name}' body section")
+    if section_list != sorted(section_list):
+        errors.append("README.md: skill body sections are not in alphabetical order")
 
     for w in warnings:
         print(f"warning: {w}")
