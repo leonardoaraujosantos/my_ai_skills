@@ -10,7 +10,7 @@
 #   scripts/install_global_claude.sh --overwrite  # replace the whole file
 #   scripts/install_global_claude.sh --dry-run    # show what would happen
 #
-# CLAUDE_HOME overrides ~/.claude (used by tests).
+# CLAUDE_HOME overrides ~/.claude (useful for sandboxed/test runs).
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

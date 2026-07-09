@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-"""Validate each skill's SKILL.md frontmatter and README parity.
+"""Validate each skill's SKILL.md frontmatter and docs/README parity.
 
 Checks (hard errors, exit 1):
   * every <skill>/SKILL.md has a frontmatter block
   * frontmatter `name:` matches the directory name
   * frontmatter has a non-empty `description:`
-  * every skill directory is listed in the README "Skills Overview" table,
+  * every skill directory has a row in the docs/SKILLS.md table (alphabetical),
     and the table lists no skill that doesn't exist
+  * every skill appears in the README "Skills at a Glance" mermaid mindmap,
+    and the mindmap lists no skill that doesn't exist
+  * every skill has a `## <name>` body section in the README, in alphabetical order
 
 Warnings (exit 0): missing `argument-hint`.
 
@@ -62,14 +65,46 @@ def main() -> int:
         if "argument-hint" not in keys:
             warnings.append(f"{name}/SKILL.md: no 'argument-hint'")
 
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    listed = set(re.findall(r"^\|\s*\[([a-z0-9-]+)\]\(#", readme, re.MULTILINE))
+    # docs/SKILLS.md — the complete overview table
+    skills_doc = ROOT / "docs" / "SKILLS.md"
+    if not skills_doc.exists():
+        errors.append("docs/SKILLS.md: file is missing")
+        rows = []
+    else:
+        rows = re.findall(
+            r"^\|\s*\[([a-z0-9-]+)\]\(\.\./README\.md#", skills_doc.read_text(encoding="utf-8"), re.MULTILINE
+        )
+    listed = set(rows)
     for name in skill_dirs:
         if name not in listed:
-            errors.append(f"README.md: skill '{name}' missing from the Skills Overview table")
+            errors.append(f"docs/SKILLS.md: skill '{name}' missing from the Skills Overview table")
     for name in sorted(listed):
         if name not in skill_dirs:
-            errors.append(f"README.md: table lists '{name}' but there is no such skill directory")
+            errors.append(f"docs/SKILLS.md: table lists '{name}' but there is no such skill directory")
+    if rows != sorted(rows):
+        errors.append("docs/SKILLS.md: table rows are not in alphabetical order")
+
+    # README.md — mindmap and per-skill body sections
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    mindmap_match = re.search(r"```mermaid\s*\nmindmap\n(.*?)```", readme, re.DOTALL)
+    if not mindmap_match:
+        errors.append("README.md: 'Skills at a Glance' mermaid mindmap block not found")
+    else:
+        mindmap_nodes = set(re.findall(r"^\s+([a-z0-9-]+)$", mindmap_match.group(1), re.MULTILINE))
+        for name in skill_dirs:
+            if name not in mindmap_nodes:
+                errors.append(f"README.md: skill '{name}' missing from the mindmap")
+        for name in sorted(mindmap_nodes):
+            if name not in skill_dirs:
+                errors.append(f"README.md: mindmap lists '{name}' but there is no such skill directory")
+
+    section_list = re.findall(r"^## ([a-z0-9-]+)\s*$", readme, re.MULTILINE)
+    sections = set(section_list)
+    for name in skill_dirs:
+        if name not in sections:
+            errors.append(f"README.md: skill '{name}' has no '## {name}' body section")
+    if section_list != sorted(section_list):
+        errors.append("README.md: skill body sections are not in alphabetical order")
 
     for w in warnings:
         print(f"warning: {w}")
