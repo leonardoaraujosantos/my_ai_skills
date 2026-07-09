@@ -4,6 +4,77 @@
 
 A collection of Claude Code skills for automating common tasks. These skills extend Claude Code's capabilities with specialized tools for document conversion, data manipulation, media processing, and productivity.
 
+## Skills at a Glance
+
+```mermaid
+mindmap
+  root((My AI Skills))
+    Documents and Data
+      convert-to-md
+      csv-tools
+      json-tools
+      latex-tools
+      markitdown-hook
+      pdf-tools
+    Media and Audio
+      elevenlabs
+      generate-image
+      image-tools
+      transcribe
+      video-tools
+    Dev Workflow and Code Quality
+      code-review
+      cognitive-complexity
+      dep-audit
+      github
+      openspec
+      openspec-baseline
+      release-notes
+      sync-skills
+    Mobile Development
+      android-tools
+      ios-simulator
+      mobile-device-testing
+      mobile-profiling
+      mobile-publish
+      xcode-tools
+    Backend and Infrastructure
+      api-client
+      coolify
+      docker-tools
+      mcp-client
+      payments
+      pg-client
+    Security
+      pentest
+    Electronics and Engineering
+      datasheet
+      eng-calc
+      kicad-tools
+      rf-tools
+      spice
+    Knowledge and Research
+      bookmarks
+      flashcards
+      journal
+      lit-review
+      notebooklm
+      obsidian
+      study-this
+      weekly-review
+      youtube-playlist
+    Productivity and Workspace
+      email-triage
+      finance
+      gws
+    Presentation and Visuals
+      app-showcase
+      mermaid
+      visual-explainer
+```
+
+The full table — every skill with its description and dependencies — lives in **[docs/SKILLS.md](docs/SKILLS.md)**. Detailed usage for each skill is in the sections below.
+
 ## Installation
 
 Clone this repository and copy the skills to your Claude Code skills directory:
@@ -35,60 +106,7 @@ The merge is idempotent: the template lives between `<!-- my_ai_skills:global-ru
 
 ## Skills Overview
 
-| Skill | Description | Dependencies |
-|-------|-------------|--------------|
-| [android-tools](#android-tools) | Android emulator/adb/logcat recipes, ANR & Gradle build triage | Android SDK (`adb`, `emulator`, `avdmanager`) |
-| [api-client](#api-client) | HTTP client with saved request collections & environments (a CLI Postman) | None |
-| [app-showcase](#app-showcase) | Build a pitch deck or screenshot-driven manual from a live app | `playwright`, `gws` |
-| [bookmarks](#bookmarks) | Save URLs to Obsidian vault | `requests`, `beautifulsoup4` |
-| [code-review](#code-review) | Review code for architecture, security & test coverage | None |
-| [cognitive-complexity](#cognitive-complexity) | Measure & rank Cognitive Complexity to target refactors | `complexipy`, `gocognit`, `eslint-plugin-sonarjs`, `clang-tidy`, `solhint`, `scc` |
-| [convert-to-md](#convert-to-md) | Convert PDF/PPTX to Markdown | `pymupdf`, `python-pptx` |
-| [coolify](#coolify) | Manage Coolify deployments & env vars via API | None |
-| [csv-tools](#csv-tools) | CSV manipulation & conversion | None |
-| [datasheet](#datasheet) | Digest component datasheets into structured part cards; compare parts | None |
-| [dep-audit](#dep-audit) | Multi-ecosystem dependency vulnerability & outdated audit with upgrade plan | Per-ecosystem: `npm`, `pip-audit`, `govulncheck`, `cargo-audit` |
-| [docker-tools](#docker-tools) | Docker/Compose debugging & maintenance recipes | `docker` CLI |
-| [elevenlabs](#elevenlabs) | TTS, SFX, voice conversion, music & audio isolation | `ELEVENLABS_API_KEY` env var |
-| [email-triage](#email-triage) | Gmail inbox triage: classify, summarize, draft replies, batch archive | `@googleworkspace/cli` (npm) |
-| [eng-calc](#eng-calc) | EE + mechanical calculators: dividers, E-series, filters, AWG, thermal, beams, bolts | None |
-| [finance](#finance) | Personal finance from bank/card CSV exports: ledger, rules, reports | None |
-| [flashcards](#flashcards) | Flashcards from study notes for Anki or Obsidian | None (optional: `genanki`) |
-| [generate-image](#generate-image) | AI media studio: images, video, music, TTS, analysis | `GEMINI_API_KEY` env var |
-| [github](#github) | Resilient GitHub REST access when api.github.com is blocked | `gh`, `curl`, `jq` |
-| [gws](#gws) | Google Workspace CLI integration | `@googleworkspace/cli` (npm) |
-| [image-tools](#image-tools) | Image manipulation | `Pillow` |
-| [ios-simulator](#ios-simulator) | Drive the iOS Simulator via `xcrun simctl`: apps, push, permissions, screenshots | Xcode |
-| [journal](#journal) | Daily journaling to Obsidian | None |
-| [json-tools](#json-tools) | JSON manipulation & queries | None (optional: `pyyaml`) |
-| [kicad-tools](#kicad-tools) | KiCad CLI: ERC/DRC checks, BOM/netlist, gerbers & fab outputs | `kicad-cli` (KiCad 8/9) |
-| [latex-tools](#latex-tools) | Compile, scaffold & debug LaTeX; IEEE/report/TikZ templates | `latexmk` (MacTeX) or `tectonic` |
-| [lit-review](#lit-review) | Systematic literature review: matrix, contradictions, cited survey note | None |
-| [markitdown-hook](#markitdown-hook) | Auto-convert PDF/Office docs to Markdown on Read (token saver) | `markitdown[all]` (auto-installed) |
-| [mcp-client](#mcp-client) | Test, explore & manage MCP servers | `mcp` (pip) |
-| [mermaid](#mermaid) | Create cross-platform Mermaid diagrams | None |
-| [mobile-device-testing](#mobile-device-testing) | Tests on real devices & device farms: XCUITest on hardware, Maestro, Firebase Test Lab | Xcode / Android SDK (optional: maestro, gcloud) |
-| [mobile-profiling](#mobile-profiling) | CLI profiling: Instruments/xctrace (iOS), Perfetto/Macrobenchmark (Android) | Xcode / Android SDK+NDK |
-| [mobile-publish](#mobile-publish) | App Store & Google Play release pipelines, TestFlight/tracks, review playbooks | Xcode / Android SDK (optional: fastlane, bundletool) |
-| [notebooklm](#notebooklm) | Full Google NotebookLM API: notebooks, sources, artifacts | `notebooklm-py` (pip) |
-| [obsidian](#obsidian) | Obsidian vault management | Obsidian CLI |
-| [openspec](#openspec) | Spec-driven development with OpenSpec | `openspec` CLI (Node ≥ 20) |
-| [openspec-baseline](#openspec-baseline) | Onboard a brownfield codebase onto OpenSpec + CI | `openspec` CLI |
-| [payments](#payments) | Payment/subscription dev & debugging for Stripe, iOS StoreKit, Play Billing | None (optional: Stripe CLI, Stripe MCP) |
-| [pdf-tools](#pdf-tools) | PDF manipulation | `pypdf` |
-| [pentest](#pentest) | Authorized defensive security testing — 40 vuln playbooks + recon + Shannon | Per-playbook CLI tools (curl, ffuf, nuclei…); Docker for Shannon |
-| [pg-client](#pg-client) | PostgreSQL client with graph & RLS support | `psycopg2` |
-| [release-notes](#release-notes) | Changelog / release notes from git history between refs | `gh` (fallback: github skill) |
-| [rf-tools](#rf-tools) | RF calculators: link budget, VSWR, Friis NF, matching, microstrip, attenuators | None |
-| [spice](#spice) | ngspice batch simulation: AC/tran/DC/op, circuit templates, CSV + ASCII plots | `ngspice` |
-| [study-this](#study-this) | Process study references & manage Obsidian study notes | `@googleworkspace/cli` (npm), `yt-dlp` |
-| [sync-skills](#sync-skills) | Sync skills to GitHub repo | None |
-| [transcribe](#transcribe) | Local Whisper speech-to-text for audio/video (txt/srt/vtt/json/md) | `ffmpeg` + a Whisper backend |
-| [video-tools](#video-tools) | Video manipulation with ffmpeg: trim, compress, GIF, merge | `ffmpeg` |
-| [visual-explainer](#visual-explainer) | Generate self-contained HTML diagrams, slide decks & dashboards | None (optional: `surf-cli` for AI images) |
-| [weekly-review](#weekly-review) | Weekly review note from journal, calendar, tasks & git activity | journal, gws & obsidian skills |
-| [xcode-tools](#xcode-tools) | xcodebuild/xcresult/signing/symbolication/devicectl recipes | Xcode |
-| [youtube-playlist](#youtube-playlist) | YouTube playlist & CC extraction | `yt-dlp`, `youtube-transcript-api` |
+The complete table — every skill with its description and dependencies — lives in **[docs/SKILLS.md](docs/SKILLS.md)** (kept in sync with the skill directories by CI). The sections below document each skill in detail.
 
 ---
 
