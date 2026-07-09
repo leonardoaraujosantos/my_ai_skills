@@ -69,6 +69,7 @@ The merge is idempotent: the template lives between `<!-- my_ai_skills:global-ru
 | [obsidian](#obsidian) | Obsidian vault management | Obsidian CLI |
 | [openspec](#openspec) | Spec-driven development with OpenSpec | `openspec` CLI (Node ≥ 20) |
 | [openspec-baseline](#openspec-baseline) | Onboard a brownfield codebase onto OpenSpec + CI | `openspec` CLI |
+| [payments](#payments) | Payment/subscription dev & debugging for Stripe, iOS StoreKit, Play Billing | None (optional: Stripe CLI, Stripe MCP) |
 | [pdf-tools](#pdf-tools) | PDF manipulation | `pypdf` |
 | [pentest](#pentest) | Authorized defensive security testing — 40 vuln playbooks + recon + Shannon | Per-playbook CLI tools (curl, ffuf, nuclei…); Docker for Shannon |
 | [pg-client](#pg-client) | PostgreSQL client with graph & RLS support | `psycopg2` |
@@ -1448,6 +1449,38 @@ Onboard an existing (brownfield) codebase onto OpenSpec end-to-end: initialize `
 ```
 openspec-baseline/
 └── SKILL.md
+```
+
+---
+
+## payments
+
+Cross-platform payment and subscription development/debugging playbooks for the three payment stacks: **Stripe** (web — CLI webhook loop, `stripe trigger`, test cards, test clocks, subscription lifecycle events), **Apple StoreKit 2 / App Store Connect** (`.storekit` Xcode testing, `SKTestSession` CI automation, sandbox renewal-rate tables, App Store Server API/Notifications V2, "products not loading" decision tree), and **Google Play Billing** (Billing Library 8/9, license-tester accelerated renewals, the 3-day acknowledgment refund trap, RTDN, `subscriptionsv2` verification, `BillingResponseCode` table). A cross-platform architecture reference maps all three event vocabularies onto one subscription lifecycle and defines the server-side entitlements source-of-truth pattern.
+
+Complements (does not duplicate) the official Stripe skills plugin (`claude plugin install stripe@claude-plugins-official`) and Stripe MCP (`claude mcp add --transport http stripe https://mcp.stripe.com/`) — this skill focuses on testing/debugging and the iOS/Android layers Stripe doesn't cover.
+
+### Usage
+
+```bash
+# Debug a platform-specific issue
+/payments ios products not loading
+/payments android purchase refunded after 3 days
+/payments stripe webhook signature fails locally
+
+# Design/review the cross-platform backend
+/payments architecture
+```
+
+### Files
+
+```
+payments/
+├── SKILL.md
+└── references/
+    ├── stripe.md
+    ├── ios-storekit.md
+    ├── android-play-billing.md
+    └── architecture.md
 ```
 
 ---
