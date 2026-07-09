@@ -37,6 +37,7 @@ The merge is idempotent: the template lives between `<!-- my_ai_skills:global-ru
 
 | Skill | Description | Dependencies |
 |-------|-------------|--------------|
+| [android-tools](#android-tools) | Android emulator/adb/logcat recipes, ANR & Gradle build triage | Android SDK (`adb`, `emulator`, `avdmanager`) |
 | [api-client](#api-client) | HTTP client with saved request collections & environments (a CLI Postman) | None |
 | [app-showcase](#app-showcase) | Build a pitch deck or screenshot-driven manual from a live app | `playwright`, `gws` |
 | [bookmarks](#bookmarks) | Save URLs to Obsidian vault | `requests`, `beautifulsoup4` |
@@ -57,6 +58,7 @@ The merge is idempotent: the template lives between `<!-- my_ai_skills:global-ru
 | [github](#github) | Resilient GitHub REST access when api.github.com is blocked | `gh`, `curl`, `jq` |
 | [gws](#gws) | Google Workspace CLI integration | `@googleworkspace/cli` (npm) |
 | [image-tools](#image-tools) | Image manipulation | `Pillow` |
+| [ios-simulator](#ios-simulator) | Drive the iOS Simulator via `xcrun simctl`: apps, push, permissions, screenshots | Xcode |
 | [journal](#journal) | Daily journaling to Obsidian | None |
 | [json-tools](#json-tools) | JSON manipulation & queries | None (optional: `pyyaml`) |
 | [kicad-tools](#kicad-tools) | KiCad CLI: ERC/DRC checks, BOM/netlist, gerbers & fab outputs | `kicad-cli` (KiCad 8/9) |
@@ -65,6 +67,8 @@ The merge is idempotent: the template lives between `<!-- my_ai_skills:global-ru
 | [markitdown-hook](#markitdown-hook) | Auto-convert PDF/Office docs to Markdown on Read (token saver) | `markitdown[all]` (auto-installed) |
 | [mcp-client](#mcp-client) | Test, explore & manage MCP servers | `mcp` (pip) |
 | [mermaid](#mermaid) | Create cross-platform Mermaid diagrams | None |
+| [mobile-profiling](#mobile-profiling) | CLI profiling: Instruments/xctrace (iOS), Perfetto/Macrobenchmark (Android) | Xcode / Android SDK+NDK |
+| [mobile-publish](#mobile-publish) | App Store & Google Play release pipelines, TestFlight/tracks, review playbooks | Xcode / Android SDK (optional: fastlane, bundletool) |
 | [notebooklm](#notebooklm) | Full Google NotebookLM API: notebooks, sources, artifacts | `notebooklm-py` (pip) |
 | [obsidian](#obsidian) | Obsidian vault management | Obsidian CLI |
 | [openspec](#openspec) | Spec-driven development with OpenSpec | `openspec` CLI (Node ≥ 20) |
@@ -82,7 +86,33 @@ The merge is idempotent: the template lives between `<!-- my_ai_skills:global-ru
 | [video-tools](#video-tools) | Video manipulation with ffmpeg: trim, compress, GIF, merge | `ffmpeg` |
 | [visual-explainer](#visual-explainer) | Generate self-contained HTML diagrams, slide decks & dashboards | None (optional: `surf-cli` for AI images) |
 | [weekly-review](#weekly-review) | Weekly review note from journal, calendar, tasks & git activity | journal, gws & obsidian skills |
+| [xcode-tools](#xcode-tools) | xcodebuild/xcresult/signing/symbolication/devicectl recipes | Xcode |
 | [youtube-playlist](#youtube-playlist) | YouTube playlist & CC extraction | `yt-dlp`, `youtube-transcript-api` |
+
+---
+
+## android-tools
+
+Native Android development CLI recipes: emulator/AVD management (headless CI boot, snapshots, network/battery/GPS simulation via the console), adb essentials (install flags, deep links, permission grants, screenshots/screenrecord with Demo Mode clean status bar, logcat filtering, `run-as` file access), crash/ANR/tombstone debugging with `ndk-stack` and `dumpsys`, and Gradle build triage (AGP 9 matrix, dependency conflicts, manifest merger, R8/ProGuard, configuration cache, signing).
+
+### Usage
+
+```bash
+/android-tools emulator boot headless
+/android-tools adb deep link myscheme://path
+/android-tools debug this ANR
+/android-tools gradle duplicate class error
+```
+
+### Files
+
+```
+android-tools/
+├── SKILL.md
+└── references/
+    ├── debugging.md
+    └── gradle.md
+```
 
 ---
 
@@ -911,6 +941,28 @@ image-tools/
 
 ---
 
+## ios-simulator
+
+Drive the iOS Simulator entirely from the CLI with `xcrun simctl` (verified against Xcode 26): device create/boot/erase with `bootstatus` waiting, app install/launch with env vars and attached console, deep links and universal links, simulated push notifications (`.apns` payloads), permission grant/revoke, screenshots and video with App-Store-clean status bar overrides, location/route simulation, log streaming, media seeding, and the stuck-simulator/disk-bloat troubleshooting ladder.
+
+### Usage
+
+```bash
+/ios-simulator screenshot with clean status bar
+/ios-simulator test push notification payload.json
+/ios-simulator grant photos permission
+/ios-simulator simulator won't boot
+```
+
+### Files
+
+```
+ios-simulator/
+└── SKILL.md
+```
+
+---
+
 ## journal
 
 Daily journaling with templates saved to Obsidian vault.
@@ -1263,6 +1315,54 @@ When invoked with `/mermaid fix <file>`, the skill scans all Mermaid blocks in t
 ```
 mermaid/
 └── SKILL.md
+```
+
+---
+
+## mobile-profiling
+
+CLI-driven profiling for native mobile apps. iOS: Instruments via `xcrun xctrace` (Time Profiler/Hangs, Allocations, App Launch, SwiftUI templates), programmatic trace export with the XML ref-dedup gotchas documented, `leaks`/`heap`/`vmmap` against simulator processes, `os_signpost` as the CI-assertable timing channel, and MetricKit field data. Android: Perfetto system traces with `trace_processor` SQL, Macrobenchmark startup/frame metrics, Baseline Profiles generation and verification, simpleperf CPU profiling, heap dumps, and `gfxinfo framestats` jank analysis. A routing table maps each question (CPU, startup, leaks, jank, hangs) to the right tool per platform, with the simulator-vs-device constraints spelled out.
+
+### Usage
+
+```bash
+/mobile-profiling ios why is startup slow
+/mobile-profiling android measure jank
+/mobile-profiling find the memory leak
+```
+
+### Files
+
+```
+mobile-profiling/
+├── SKILL.md
+└── references/
+    ├── ios-instruments.md
+    └── android-perfetto.md
+```
+
+---
+
+## mobile-publish
+
+Store release pipelines for both platforms (verified July 2026). App Store: agvtool versioning and TestFlight build-number rules, upload paths (App Store Connect API build-upload endpoints, fastlane pilot/deliver, altool), TestFlight internal/external mechanics and blockers (export compliance), current screenshot specs, privacy labels, age-rating questionnaire, and a review-rejection response playbook (4.3/2.1/4.2/3.1.1/5.1.1). Google Play: AAB + Play App Signing (upload-key reset), versionCode discipline, track ladder with staged rollouts and managed publishing, Play Developer API / fastlane supply automation, data safety form, target-API deadlines, and pre-launch reports. Never submits or promotes to public tracks without explicit confirmation.
+
+### Usage
+
+```bash
+/mobile-publish ios upload to TestFlight
+/mobile-publish android staged rollout to production
+/mobile-publish why was my app rejected
+```
+
+### Files
+
+```
+mobile-publish/
+├── SKILL.md
+└── references/
+    ├── app-store.md
+    └── play-store.md
 ```
 
 ---
@@ -1947,6 +2047,30 @@ Aggregate the week's activity — journal entries (journal skill), calendar meet
 ```
 weekly-review/
 └── SKILL.md
+```
+
+---
+
+## xcode-tools
+
+Xcode build-system CLI recipes (verified against Xcode 26): `xcodebuild` build/test with destinations, test plans, build-once/test-many `.xctestrun` splits and Swift Testing quirks; parsing `.xcresult` bundles with the post-Xcode-16 `xcresulttool` shape (failures, attachments/screenshots export, coverage via `xccov`); code-signing triage with an error→fix table and the CI temp-keychain recipe; crash symbolication (dSYM UUID matching, `atos`, CrashSymbolicator.py); physical-device control with `devicectl`; and DerivedData/SPM/module-cache hygiene. Hands off to ios-simulator for simulator control and mobile-publish for store uploads.
+
+### Usage
+
+```bash
+/xcode-tools test and parse the xcresult
+/xcode-tools signing error no certificate
+/xcode-tools symbolicate crash.ips
+/xcode-tools run on my iPhone
+```
+
+### Files
+
+```
+xcode-tools/
+├── SKILL.md
+└── references/
+    └── signing.md
 ```
 
 ---
