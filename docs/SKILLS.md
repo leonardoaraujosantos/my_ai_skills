@@ -25,6 +25,7 @@ Complete table of every skill in this repository. Each skill name links to its d
 | [generate-image](../README.md#generate-image) | AI media studio: images, video, music, TTS, analysis | `GEMINI_API_KEY` env var |
 | [github](../README.md#github) | Resilient GitHub REST access when api.github.com is blocked | `gh`, `curl`, `jq` |
 | [gws](../README.md#gws) | Google Workspace CLI integration | `@googleworkspace/cli` (npm) |
+| [hardhat-tools](../README.md#hardhat-tools) | Solidity dev/test/deploy with Hardhat 2 & 3 (Ignition, forking) + Slither; deploys gated | `hardhat` + version-matched toolbox; optional `slither-analyzer` |
 | [image-tools](../README.md#image-tools) | Image manipulation | `Pillow` |
 | [ios-simulator](../README.md#ios-simulator) | Drive the iOS Simulator via `xcrun simctl`: apps, push, permissions, screenshots | Xcode |
 | [journal](../README.md#journal) | Daily journaling to Obsidian | None |

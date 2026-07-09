@@ -28,6 +28,7 @@ mindmap
       dep-audit
       foundry-tools
       github
+      hardhat-tools
       openspec
       openspec-baseline
       release-notes
@@ -947,6 +948,52 @@ gws tasks tasks insert --params '{"tasklist": "@default"}' --json '{"title": "Ne
 ```
 gws/
 └── SKILL.md
+```
+
+---
+
+## hardhat-tools
+
+Solidity smart-contract development, testing, and deployment with the Hardhat JS/TS toolchain — the complement to `foundry-tools`. Covers both **Hardhat 3** (ESM, TypeScript config, `node:test`/Mocha/Solidity test runners, viem or ethers, network manager, built-in encrypted keystore, Ignition) and **Hardhat 2** (CommonJS config, Mocha/Chai/ethers, `solidity-coverage`, gas reporter) — detecting which the project uses first. Same Solidity-is-security-critical rule and approval-gated deploys/sends as the Foundry skill: it defaults to `hardhat test`, the in-memory network, and mainnet forks, and only touches a live network after you confirm.
+
+### Installation
+
+```bash
+# Hardhat 3 (requires Node >= 22.13.0):
+npm i -D hardhat @nomicfoundation/hardhat-toolbox-mocha-ethers   # or -toolbox-viem
+# Hardhat 2 (note the @hh2 tag on the toolbox):
+npm i -D hardhat@2 "@nomicfoundation/hardhat-toolbox@hh2"
+pip install slither-analyzer                                     # static analysis (optional)
+```
+
+### Usage
+
+```bash
+/hardhat-tools test this contract          # npx hardhat test (+ test solidity on HH3)
+/hardhat-tools deploy with ignition        # gated: rehearses on fork, deploys only after approval
+/hardhat-tools migrate hardhat 2 to 3      # config/API differences
+/hardhat-tools slither this project        # static analysis + review checklist
+```
+
+### Reference files
+
+| Topic | File |
+|-------|------|
+| Hardhat 3 end to end (TS config, tests, forking, gas/coverage, keystore) | `references/hardhat3.md` |
+| Hardhat 2 end to end (JS config, Mocha/ethers, coverage, gas reporter) | `references/hardhat2.md` |
+| Deployment: Ignition + script deploys, verification, keystores | `references/deploy.md` |
+| Slither on a Hardhat project + review checklist + Foundry interop | `references/security.md` |
+
+### Files
+
+```
+hardhat-tools/
+├── SKILL.md
+└── references/
+    ├── hardhat3.md
+    ├── hardhat2.md
+    ├── deploy.md
+    └── security.md
 ```
 
 ---
