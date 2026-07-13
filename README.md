@@ -42,6 +42,7 @@ mindmap
       xcode-tools
     Backend and Infrastructure
       api-client
+      arweave
       coolify
       docker-tools
       mcp-client
@@ -200,6 +201,50 @@ app-showcase/
 ├── SKILL.md
 ├── scripts/{capture.py, slides.py, manual_pdf.py}
 └── references/{playbook.md, mobile.md}
+```
+
+---
+
+## arweave
+
+Operate Arweave and AO as a developer: permanent storage uploads (Turbo SDK/CLI with cost checks, tags, ANS-104 bundles, arweave-js as low-level appendix), GraphQL queries by tags across current endpoints, permaweb site deploys (manifests, ArNS names/undernames, `@ar.io/deploy` and `@permaweb/deploy`, CI recipes), and AO hyperparallel compute (aos REPL, Lua handlers, aoconnect spawn/message/result/dryrun, HyperBEAM HTTP state reads). Ships with three safety gates — permanence (uploads are public, immutable, forever; PII check first), spending (uploads beyond free tier, Turbo top-ups, ArNS purchases and token transfers require explicit approval), and key material (wallet keyfiles never printed, committed, or uploaded) — plus a stale-vs-current table so it never recommends pre-2025 tooling (arkb, ArQL, `get_ao.g8way.io`). Facts verified against official docs July 2026.
+
+### Installation
+
+```bash
+# no global install required; per-task tools are fetched on demand:
+npm i -g https://get_ao.arweave.net        # aos REPL (Node 20+)
+# per-project: @ardrive/turbo-sdk, @permaweb/aoconnect, @ar.io/deploy
+```
+
+### Usage
+
+```bash
+/arweave upload this folder permanently     # Turbo, with cost check + confirmation
+/arweave query my app's transactions        # GraphQL by tags
+/arweave deploy ./dist to myapp.ar.io       # manifest + ArNS repoint (gated)
+/arweave ao create a counter process        # aos + Lua handlers + aoconnect
+```
+
+### Reference files
+
+| Topic | File |
+|-------|------|
+| Uploads: Turbo SDK/CLI, costs, tags, wallets, arweave-js | `references/upload.md` |
+| Queries: GraphQL endpoints, tag/cursor patterns, gateways | `references/query.md` |
+| Site deploys: manifests, ArNS, undernames, CI | `references/deploy.md` |
+| AO: aos, handlers, aoconnect, HyperBEAM HTTP state | `references/ao.md` |
+
+### Files
+
+```
+arweave/
+├── SKILL.md
+└── references/
+    ├── upload.md
+    ├── query.md
+    ├── deploy.md
+    └── ao.md
 ```
 
 ---

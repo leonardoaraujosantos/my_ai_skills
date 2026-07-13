@@ -7,6 +7,7 @@ Complete table of every skill in this repository. Each skill name links to its d
 | [android-tools](../README.md#android-tools) | Android emulator/adb/logcat recipes, ANR & Gradle build triage | Android SDK (`adb`, `emulator`, `avdmanager`) |
 | [api-client](../README.md#api-client) | HTTP client with saved request collections & environments (a CLI Postman) | None |
 | [app-showcase](../README.md#app-showcase) | Build a pitch deck or screenshot-driven manual from a live app | `playwright`, `gws` |
+| [arweave](../README.md#arweave) | Arweave/AO ops: permanent uploads (Turbo), GraphQL, permaweb/ArNS deploys, aos + aoconnect; spending & permanence gated | Per-task npm: `@ardrive/turbo-sdk`, `@permaweb/aoconnect`, `@ar.io/deploy`, `aos` CLI |
 | [bookmarks](../README.md#bookmarks) | Save URLs to Obsidian vault | `requests`, `beautifulsoup4` |
 | [code-review](../README.md#code-review) | Review code for architecture, security & test coverage | None |
 | [cognitive-complexity](../README.md#cognitive-complexity) | Measure & rank Cognitive Complexity to target refactors | `complexipy`, `gocognit`, `eslint-plugin-sonarjs`, `clang-tidy`, `solhint`, `scc` |
