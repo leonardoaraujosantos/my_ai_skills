@@ -29,6 +29,7 @@ Complete table of every skill in this repository. Each skill name links to its d
 | [hardhat-tools](../README.md#hardhat-tools) | Solidity dev/test/deploy with Hardhat 2 & 3 (Ignition, forking) + Slither; deploys gated | `hardhat` + version-matched toolbox; optional `slither-analyzer` |
 | [image-tools](../README.md#image-tools) | Image manipulation | `Pillow` |
 | [ios-simulator](../README.md#ios-simulator) | Drive the iOS Simulator via `xcrun simctl`: apps, push, permissions, screenshots | Xcode |
+| [ipfs](../README.md#ipfs) | IPFS ops: Kubo node, CIDs, pinning services & Filecoin, IPNS/DNSLink sites, Helia + verified fetch; publicity & spending gated | Kubo (`brew install ipfs`); per-project npm: `helia`, `@helia/verified-fetch`, `pinata`, `@storacha/cli` |
 | [journal](../README.md#journal) | Daily journaling to Obsidian | None |
 | [json-tools](../README.md#json-tools) | JSON manipulation & queries | None (optional: `pyyaml`) |
 | [kicad-tools](../README.md#kicad-tools) | KiCad CLI: ERC/DRC checks, BOM/netlist, gerbers & fab outputs | `kicad-cli` (KiCad 8/9) |

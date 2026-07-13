@@ -45,6 +45,7 @@ mindmap
       arweave
       coolify
       docker-tools
+      ipfs
       mcp-client
       payments
       pg-client
@@ -1114,6 +1115,49 @@ Drive the iOS Simulator entirely from the CLI with `xcrun simctl` (verified agai
 ```
 ios-simulator/
 └── SKILL.md
+```
+
+---
+
+## ipfs
+
+Operate IPFS as a developer: run and drive a Kubo node (add/cat/pin/gc, the CIDv1-vs-default-CIDv0 gotcha, cache-vs-pin-vs-provide mental model), keep data alive (vendor-neutral Pinning Service API, Pinata/Storacha/Filebase/4EVERLAND, Filecoin incl. 2026's Onchain Cloud), name and ship sites (IPNS with its TTL/expiry realities, DNSLink, subdomain vs path gateways, trustless gateways), and build apps (Helia, `@helia/verified-fetch`, Pinata SDK, CID-on-chain and encrypt-before-add patterns). Two safety gates — publicity (added data is public and effectively unrecallable; PII check before adding) and spending (paid pinning/Filecoin deals need explicit approval) — plus key/token hygiene (never expose port 5001; JWTs in env vars) and a stale-vs-current table covering the 2025-26 public-gateway wind-down, js-ipfs → Helia, and the web3.storage → Storacha churn. Facts verified against official docs July 2026.
+
+### Installation
+
+```bash
+brew install ipfs                          # Kubo node (macOS)
+# per-project: helia @helia/unixfs @helia/verified-fetch, pinata, @storacha/cli
+```
+
+### Usage
+
+```bash
+/ipfs run a local node and add this folder    # Kubo init/daemon + add --cid-version 1
+/ipfs keep this CID alive                     # remote pinning, Pinning Service API (gated)
+/ipfs publish this site with a stable name    # IPNS vs DNSLink + gateway guidance
+/ipfs fetch this CID verified in the browser  # Helia verified-fetch
+```
+
+### Reference files
+
+| Topic | File |
+|-------|------|
+| Node ops: Kubo CLI, CIDs, pin/gc, providing, retrieval path | `references/node.md` |
+| Persistence: pinning services, Pinning Service API, Filecoin | `references/pinning.md` |
+| Naming & sites: IPNS, DNSLink, gateways, deploys | `references/naming.md` |
+| Apps: Helia, verified fetch, SDKs, architecture patterns | `references/apps.md` |
+
+### Files
+
+```
+ipfs/
+├── SKILL.md
+└── references/
+    ├── node.md
+    ├── pinning.md
+    ├── naming.md
+    └── apps.md
 ```
 
 ---
