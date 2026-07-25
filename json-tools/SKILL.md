@@ -32,8 +32,7 @@ python3 "$SKILL_DIR/json_tools.py" <command> <file> [options]
 | `merge` | Merge multiple files |
 | `to-csv` | Convert array to CSV |
 | `to-yaml` | Convert to YAML |
-| `flatten` | Flatten nested structure to `{path: value}` |
-| `unflatten` | Rebuild nested JSON from a flattened `{path: value}` dict |
+| `flatten` | Flatten nested structure |
 
 ## Options
 
@@ -94,9 +93,6 @@ python3 "$SKILL_DIR/json_tools.py" to-yaml config.json -o config.yaml
 
 # Flatten nested JSON
 python3 "$SKILL_DIR/json_tools.py" flatten nested.json -o flat.json
-
-# Rebuild nested JSON from a flattened file
-python3 "$SKILL_DIR/json_tools.py" unflatten flat.json -o nested.json
 ```
 
 ## Optional Dependencies

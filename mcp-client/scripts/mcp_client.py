@@ -9,7 +9,6 @@ Manages authentication tokens per server.
 import argparse
 import asyncio
 import json
-import os
 import sys
 import time
 from pathlib import Path
@@ -40,11 +39,6 @@ def load_tokens() -> dict:
 def save_tokens(tokens: dict):
     TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)
     TOKEN_FILE.write_text(json.dumps(tokens, indent=2))
-    # Auth tokens are secrets — keep the file owner-only.
-    try:
-        os.chmod(TOKEN_FILE, 0o600)
-    except OSError:
-        pass
 
 def set_token(server_name: str, token: str, token_type: str = "bearer"):
     tokens = load_tokens()
@@ -87,11 +81,6 @@ def load_servers() -> dict:
 def save_servers(servers: dict):
     SERVERS_FILE.parent.mkdir(parents=True, exist_ok=True)
     SERVERS_FILE.write_text(json.dumps(servers, indent=2))
-    # May contain connection URLs/headers — keep the file owner-only.
-    try:
-        os.chmod(SERVERS_FILE, 0o600)
-    except OSError:
-        pass
 
 def register_server(name: str, transport: str, **kwargs):
     servers = load_servers()
@@ -151,30 +140,21 @@ async def connect_server(transport: str, server_name: Optional[str] = None, **kw
         params = StdioServerParameters(command=cmd, args=cmd_args, env=env)
         async with stdio_client(params) as (rs, ws):
             async with ClientSession(rs, ws) as session:
-                init_result = await session.initialize()
-                # serverInfo lives on the initialize() result, not the session —
-                # attach it so explore/health can show the server name/version.
-                session.server_info = getattr(init_result, "serverInfo", None)
+                await session.initialize()
                 yield session
 
     elif transport == "sse":
         url = kwargs.get("url", "")
         async with sse_client(url, headers=headers) as (rs, ws):
             async with ClientSession(rs, ws) as session:
-                init_result = await session.initialize()
-                # serverInfo lives on the initialize() result, not the session —
-                # attach it so explore/health can show the server name/version.
-                session.server_info = getattr(init_result, "serverInfo", None)
+                await session.initialize()
                 yield session
 
     elif transport in ("http", "streamable-http"):
         url = kwargs.get("url", "")
         async with streamablehttp_client(url, headers=headers) as (rs, ws, _):
             async with ClientSession(rs, ws) as session:
-                init_result = await session.initialize()
-                # serverInfo lives on the initialize() result, not the session —
-                # attach it so explore/health can show the server name/version.
-                session.server_info = getattr(init_result, "serverInfo", None)
+                await session.initialize()
                 yield session
     else:
         raise ValueError(f"Unknown transport: {transport}")
@@ -273,7 +253,7 @@ async def cmd_explore(args):
         out("=" * 60)
         try:
             r = await session.list_resource_templates()
-            templates = getattr(r, 'resourceTemplates', []) or []
+            templates = r.resource_templates if hasattr(r, 'resource_templates') else []
             if templates:
                 for t in templates:
                     out(f"\n  {t.uriTemplate}")

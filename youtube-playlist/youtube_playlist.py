@@ -28,8 +28,7 @@ import re
 from datetime import datetime
 
 # Constants
-# Vault location is configurable via the OBSIDIAN_VAULT env var.
-OBSIDIAN_VAULT = os.environ.get("OBSIDIAN_VAULT", os.path.expanduser("~/obsidian-vault"))
+OBSIDIAN_VAULT = "/Users/leonardoaraujo/work/leo-obsidian-vault"
 PLAYLISTS_BASE = f"{OBSIDIAN_VAULT}/Resources/YouTube Playlists"
 
 

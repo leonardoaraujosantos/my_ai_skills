@@ -28,6 +28,7 @@ Options:
     -v, --value <value>     Value to set
     -i, --indent <n>        Indentation spaces (default: 2)
     --sort-keys             Sort keys alphabetically
+    --compact               Compact output for arrays
 
 Examples:
     python json_tools.py info data.json
@@ -215,54 +216,36 @@ def flatten_json(data, parent_key='', sep='.'):
 
 
 def unflatten_json(data, sep='.'):
-    """Rebuild nested JSON from a flat {path: value} dict (inverse of flatten_json).
+    """Unflatten flat dictionary into nested JSON."""
+    result = {}
 
-    Handles both a top-level object and a top-level array, and mixed nesting,
-    by choosing each container's type (list vs dict) from the path segment.
-    """
-    root = [None]  # mutable holder for the root container
+    for key, value in data.items():
+        parts = parse_path(key)
+        current = result
 
-    def set_path(parts, value):
-        parent, parent_key = root, 0
-        for idx, part in enumerate(parts):
-            container = parent[parent_key]
+        for i, part in enumerate(parts[:-1]):
+            next_part = parts[i + 1]
+
             if isinstance(part, int):
-                if not isinstance(container, list):
-                    container = []
-                    parent[parent_key] = container
-                while len(container) <= part:
-                    container.append(None)
+                while len(current) <= part:
+                    current.append({} if not isinstance(next_part, int) else [])
+                if current[part] is None or (isinstance(current[part], dict) and not current[part]):
+                    current[part] = [] if isinstance(next_part, int) else {}
+                current = current[part]
             else:
-                if not isinstance(container, dict):
-                    container = {}
-                    parent[parent_key] = container
-                container.setdefault(part, None)
+                if part not in current:
+                    current[part] = [] if isinstance(next_part, int) else {}
+                current = current[part]
 
-            if idx == len(parts) - 1:
-                container[part] = value
-            else:
-                parent, parent_key = container, part
+        last_part = parts[-1]
+        if isinstance(last_part, int):
+            while len(current) <= last_part:
+                current.append(None)
+            current[last_part] = value
+        else:
+            current[last_part] = value
 
-    for compound_key, value in data.items():
-        set_path(parse_path(compound_key), value)
-
-    return root[0] if root[0] is not None else {}
-
-
-def cmd_unflatten(filepath, output):
-    """Unflatten a flat JSON dict back into nested JSON."""
-    data = load_json(filepath)
-    if data is None:
-        return
-
-    nested = unflatten_json(data)
-
-    if output:
-        with open(output, 'w', encoding='utf-8') as f:
-            json.dump(nested, f, indent=2, ensure_ascii=False)
-        print(f"Unflattened to: {output}")
-    else:
-        print(json.dumps(nested, indent=2, ensure_ascii=False))
+    return result
 
 
 def get_all_keys(data, prefix=''):
@@ -739,12 +722,6 @@ def main():
     elif cmd == 'flatten':
         if files:
             cmd_flatten(files[0], output)
-        else:
-            print("Error: JSON file required")
-
-    elif cmd == 'unflatten':
-        if files:
-            cmd_unflatten(files[0], output)
         else:
             print("Error: JSON file required")
 

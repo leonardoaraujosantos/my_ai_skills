@@ -1,7 +1,6 @@
 ---
 name: github
 description: Resilient GitHub access (issues, PRs, REST API) that survives local network blocks of api.github.com. Use when `gh` commands hang/time out, when fetching or editing issues/PRs over the API, or to diagnose whether GitHub is actually down vs blocked locally. Triggers — "gh hangs", "github times out", "can't reach github api", "is github down", view/edit issue or PR.
-argument-hint: "[doctor | status | api <path> | run <gh args>]"
 ---
 
 # GitHub (resilient)
@@ -74,5 +73,5 @@ sudo sed -i '' '/140\.82\.112\.6  api\.github\.com/d' /etc/hosts
   `GHX_TIMEOUT`.
 - This does **not** affect git over SSH (which is unaffected by the block) —
   use normal `git push`/`git pull` as usual.
-- When a command needs an `owner/repo` and none is given, detect it from the
-  current checkout (`git remote get-url origin`).
+- For repo-aware convenience inside this project, the default repo is
+  `leonardoaraujosantos/matlab_llvm`.

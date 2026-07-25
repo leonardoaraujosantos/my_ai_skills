@@ -10,21 +10,24 @@ Manage Coolify applications, deployments, environment variables, and services th
 
 ## Setup
 
-The skill supports any number of Coolify servers via environment variables.
-The default server (`sandbox`) reads the bare `COOLIFY_URL` / `COOLIFY_TOKEN`;
-any other `--server <name>` reads `COOLIFY_<NAME>_URL` / `COOLIFY_<NAME>_TOKEN`
-(name upper-cased, non-alphanumerics become `_`).
+The skill supports multiple Coolify servers via environment variables:
 
-| `--server`          | URL env var         | Token env var         |
-|---------------------|---------------------|-----------------------|
-| `sandbox` (default) | `COOLIFY_URL`       | `COOLIFY_TOKEN`       |
-| `prd`               | `COOLIFY_PRD_URL`   | `COOLIFY_PRD_TOKEN`   |
-| `<name>`            | `COOLIFY_<NAME>_URL`| `COOLIFY_<NAME>_TOKEN`|
+| Server    | URL env var              | Token env var              | `--server` |
+|-----------|--------------------------|----------------------------|------------|
+| sandbox   | `COOLIFY_URL`            | `COOLIFY_TOKEN`            | `sandbox` (default) |
+| prd       | `COOLIFY_PRD_URL`        | `COOLIFY_PRD_TOKEN`        | `prd`      |
+| cyberdyne | `COOLIFY_CYBERDYNE_URL`  | `COOLIFY_CYBERDYNE_TOKEN`  | `cyberdyne` |
 
-Discover which servers your environment actually has configured:
+The `cyberdyne` server is `https://coolify.cyberdynecorp.ai` — use it for any
+CyberSpace / Cyberdyne deployment (`--server cyberdyne`).
+
+Check what's set (don't assume from this table — env may add more):
 
 ```bash
-env | grep -iE '^COOLIFY_[A-Z0-9_]*URL=' | sed -E 's#=(https?://[^/]+).*#=\1#'
+env | grep -i '^COOLIFY_.*URL=' | sed -E 's#=(https?://[^/]+).*#=\1#'
+for v in COOLIFY_TOKEN COOLIFY_PRD_TOKEN COOLIFY_CYBERDYNE_TOKEN; do
+  echo "$v: ${!v:+SET}"
+done
 ```
 
 ## CLI Tool
@@ -38,29 +41,13 @@ python3 ~/.claude/skills/coolify/coolify_cli.py <command> [args...]
 
 **Target a specific server with `--server`:**
 ```bash
-python3 ~/.claude/skills/coolify/coolify_cli.py --server prd <command> [args...]
+python3 ~/.claude/skills/coolify/coolify_cli.py --server cyberdyne <command> [args...]
 ```
 
-Any `--server <name>` works as long as its `COOLIFY_<NAME>_URL` / `_TOKEN` are
-set (see Setup above).
+Available servers: `sandbox` (default), `prd`, `cyberdyne`. The authoritative
+list lives in `SERVERS` in `coolify_cli.py` — check there if unsure.
 
 For brevity in this doc, we'll write `coolify_cli <command>` but always use the full path.
-
----
-
-## Safety — confirm before production changes
-
-State-changing commands against a **production** server are outward-facing and
-hard to reverse. Before running any of these on `--server prd` (or any server
-you understand to be production), **stop and confirm the exact action with the
-user first**:
-
-- `deploy` / `deploy --force` — triggers a live deployment
-- `app-env-set` — changes runtime configuration (can break a running app)
-- `app-env-delete` — removes an env var (may take the app down)
-
-Read-only commands (`apps`, `app`, `app-envs`, `deployments`, `logs`,
-`services`, `resources`, `servers`, `teams`) are always safe to run.
 
 ---
 
@@ -195,7 +182,7 @@ coolify_cli app-env-set <uuid> MY_VAR '{"key":"value"}' --literal
 Old deployment is still running. Check `coolify_cli deployments <uuid>` — if latest is failed but previous succeeded, the previous container is still serving.
 
 ### Build fails with npm/pip errors
-Test the build locally first:
+Test the build locally first (see Coolify Tricks and Traps in Obsidian vault):
 ```bash
 # Frontend
 docker run --rm -v "$PWD/frontend/package.json:/app/package.json" \

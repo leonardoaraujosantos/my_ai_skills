@@ -13,25 +13,9 @@ from pathlib import Path
 try:
     from pptx import Presentation
     from pptx.enum.shapes import MSO_SHAPE_TYPE
-    from pptx.oxml.ns import qn
 except ImportError:
     print("Error: python-pptx is required. Install it with: pip install python-pptx")
     sys.exit(1)
-
-
-def _is_bulleted(paragraph) -> bool:
-    """True only if the paragraph actually carries bullet formatting.
-
-    Reading the pPr XML avoids the old heuristic that turned every non-heading
-    body paragraph into a Markdown bullet.
-    """
-    pPr = paragraph._p.find(qn("a:pPr"))
-    if pPr is None:
-        return False
-    if pPr.find(qn("a:buNone")) is not None:
-        return False
-    return (pPr.find(qn("a:buChar")) is not None
-            or pPr.find(qn("a:buAutoNum")) is not None)
 
 
 def extract_text_from_shape(shape) -> str:
@@ -64,9 +48,8 @@ def extract_text_from_shape(shape) -> str:
                 level = paragraph.level if paragraph.level else 0
                 indent = "  " * level
 
-                # Only render a bullet when the paragraph is actually bulleted
-                # (indented sub-levels are treated as bullets too).
-                if level > 0 or _is_bulleted(paragraph):
+                # Check if it's a bullet point
+                if level > 0 or (paragraph.text.strip() and not para_text.startswith("#")):
                     text_parts.append(f"{indent}- {para_text.strip()}")
                 else:
                     text_parts.append(para_text.strip())

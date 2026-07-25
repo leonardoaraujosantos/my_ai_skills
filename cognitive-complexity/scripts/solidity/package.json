@@ -1,8 +1,0 @@
-{
-  "name": "cogcom-solidity",
-  "private": true,
-  "description": "Pinned toolchain for cyclomatic-complexity scoring of Solidity (used by cogcom.py).",
-  "dependencies": {
-    "solhint": "^6.0.0"
-  }
-}
