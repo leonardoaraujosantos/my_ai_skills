@@ -1,6 +1,6 @@
 ---
 name: openspec
-description: Spec-driven development with OpenSpec. Discuss a feature then spec it before coding (proposal/specs/design/tasks), or reverse-engineer baseline specs from an existing codebase; implement against the artifacts, validate, and archive so living specs stay in the repo. Use for medium/large features, any auth/billing/security/data-model/full-stack change, or to onboard an existing project. Triggers — "use openspec", "spec this out", "propose a change", "discuss the project", "document existing code", "baseline specs", "/opsx", "openspec".
+description: Spec-driven development with OpenSpec. Discuss a feature then spec it before coding (proposal/specs/design/tasks); implement against the artifacts, validate, and archive so living specs stay in the repo. Use for medium/large features or any auth/billing/security/data-model/full-stack change. To onboard an existing (brownfield) codebase onto OpenSpec, use the openspec-baseline skill instead. Triggers — "use openspec", "spec this out", "propose a change", "discuss the project", "/opsx", "openspec".
 argument-hint: [discuss|propose|apply|baseline|status|validate|archive|init] [change-name]
 ---
 
@@ -126,34 +126,9 @@ Rule of thumb: spend 10–20 min aligning intent to save hours fixing a wrong bu
 
 ## Baseline specs from an existing codebase (brownfield)
 
-OpenSpec is brownfield-first. To adopt it on a project that's *already built*, reverse-engineer specs from the implementation so the repo gains a source-of-truth description of current behavior. Future work then flows through normal changes against that baseline.
+OpenSpec is brownfield-first: on a project that's *already built* you reverse-engineer specs from the implementation (an agent-driven read-and-document pass — there's no CLI that auto-generates specs from code), writing each capability directly to `openspec/specs/<capability>/spec.md` in `### Requirement: … SHALL …` + `#### Scenario:` form, then `openspec validate --specs`.
 
-There is **no CLI command that auto-generates specs from code** — this is an agent-driven read-and-document pass. (The expanded profile's `/opsx:onboard` automates parts of it; enable with `openspec config profile` → pick an expanded profile → `openspec update`. Otherwise do it manually as below.)
-
-1. **Init** if needed: `openspec init --tools claude`.
-2. **Map capabilities** — explore the codebase to identify distinct, user-meaningful capabilities (not files). Look at:
-   - Entry points, route/controller definitions, public API surface, CLI commands.
-   - Auth/permissions, billing, background jobs, data models/migrations, integrations.
-   - Tests — they encode intended behavior and edge cases; mine them for scenarios.
-
-   For a large/unfamiliar codebase, dispatch parallel `Explore` agents (one per subsystem) to produce a capability inventory before writing anything.
-3. **Document each capability as a spec** describing *observed* behavior in requirement form, and write it **directly** to the source-of-truth location (not as a change delta — you're recording what exists, not proposing a modification):
-   ```
-   openspec/specs/<capability>/spec.md
-   ```
-   Use the same `### Requirement: … SHALL …` + `#### Scenario:` format as below. Describe what the code *does today*, and cite the source as a breadcrumb, e.g. `(src: api/auth/magic_link.py:42)`. Flag anything ambiguous or apparently buggy as an open question for the user rather than blessing it as intended.
-4. **Validate**: `openspec validate --specs` (add `--strict` for CI-grade).
-5. **Review with the user** — confirm the baseline matches actual intent; some "current behavior" may be an accidental bug you've just documented. Correct the spec, or log a follow-up change to fix the code.
-6. **From here on**, every change goes through the normal flow (propose → apply → validate → archive), and archives merge deltas back into this baseline.
-
-Keep capabilities cohesive and split by domain so specs stay reviewable:
-```
-openspec/specs/
-├── authentication/spec.md
-├── billing/spec.md
-├── permissions/spec.md
-└── ingestion-pipeline/spec.md
-```
+**For the full end-to-end onboarding — initialize `openspec/`, reverse-engineer capability-scoped baseline specs, add an `openspec-validate` CI job, and open a PR — use the dedicated `openspec-baseline` skill.** Use the manual pass here only when you want a spec or two without the whole CI/PR machinery.
 
 ## Writing good specs
 

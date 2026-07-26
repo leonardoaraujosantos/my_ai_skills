@@ -36,6 +36,27 @@ else
   miss "npm not found — JS/TS files will be skipped"
 fi
 
+# Solidity — solhint code-complexity rule (cyclomatic)
+if [ -x "$HERE/solidity/node_modules/.bin/solhint" ] || command -v solhint >/dev/null 2>&1; then
+  ok "solhint"
+elif command -v npm >/dev/null 2>&1; then
+  ( cd "$HERE/solidity" && npm install --silent --no-fund --no-audit ) && ok "solhint installed"
+else
+  miss "npm not found — Solidity files will be skipped"
+fi
+
+# SystemVerilog — scc (per-FILE cyclomatic-style estimate; no per-function
+# SV complexity tool exists in open source — verible has no complexity rule).
+if command -v scc >/dev/null 2>&1; then
+  ok "scc"
+elif command -v brew >/dev/null 2>&1 && brew install scc >/dev/null 2>&1; then
+  ok "scc installed"
+elif command -v go >/dev/null 2>&1 && go install github.com/boyter/scc/v3@latest >/dev/null 2>&1; then
+  ok "scc installed (go)"
+else
+  miss "scc not found — SystemVerilog files will be skipped (brew install scc)"
+fi
+
 # C/C++ — clang-tidy (cognitive). Cannot auto-install; advise.
 if command -v clang-tidy >/dev/null 2>&1; then
   ok "clang-tidy"

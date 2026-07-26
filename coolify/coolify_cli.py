@@ -9,7 +9,8 @@ Environment:
     COOLIFY_TOKEN — API bearer token
 
 Global options:
-    --server <name>               Select server (sandbox, prd, cyberdyne). Default: sandbox
+    --server <name>               Select server. Default: sandbox (COOLIFY_URL/TOKEN);
+                                  any other <name> reads COOLIFY_<NAME>_URL/TOKEN
 
 Commands:
     apps                          List all applications
@@ -33,29 +34,33 @@ Commands:
 
 import json
 import os
+import re
 import sys
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
 
-SERVERS = {
-    "sandbox": {"url_env": "COOLIFY_URL", "token_env": "COOLIFY_TOKEN"},
-    "prd": {"url_env": "COOLIFY_PRD_URL", "token_env": "COOLIFY_PRD_TOKEN"},
-    "cyberdyne": {"url_env": "COOLIFY_CYBERDYNE_URL", "token_env": "COOLIFY_CYBERDYNE_TOKEN"},
-}
+# The default server reads the bare COOLIFY_URL / COOLIFY_TOKEN. Any other
+# --server <name> reads COOLIFY_<NAME>_URL / COOLIFY_<NAME>_TOKEN, so you can
+# configure as many instances as you like without editing this file.
+DEFAULT_SERVER = "sandbox"
 
-_active_server = "sandbox"
+_active_server = DEFAULT_SERVER
+
+
+def _env_names(server):
+    if server == DEFAULT_SERVER:
+        return "COOLIFY_URL", "COOLIFY_TOKEN"
+    prefix = "COOLIFY_" + re.sub(r"[^A-Z0-9]+", "_", server.upper()).strip("_")
+    return f"{prefix}_URL", f"{prefix}_TOKEN"
 
 
 def get_config():
-    srv = SERVERS.get(_active_server)
-    if not srv:
-        print(f"Error: Unknown server '{_active_server}'. Available: {', '.join(SERVERS)}", file=sys.stderr)
-        sys.exit(1)
-    url = os.environ.get(srv["url_env"], "").rstrip("/")
-    token = os.environ.get(srv["token_env"], "")
+    url_env, token_env = _env_names(_active_server)
+    url = os.environ.get(url_env, "").rstrip("/")
+    token = os.environ.get(token_env, "")
     if not url or not token:
-        print(f"Error: {srv['url_env']} and {srv['token_env']} must be set for server '{_active_server}'", file=sys.stderr)
+        print(f"Error: {url_env} and {token_env} must be set for server '{_active_server}'", file=sys.stderr)
         sys.exit(1)
     return url, token
 

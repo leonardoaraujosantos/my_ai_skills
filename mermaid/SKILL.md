@@ -1,12 +1,14 @@
 ---
 name: mermaid
-description: "Create Mermaid diagrams compatible with Obsidian, GitHub, and Notion. Use when creating or fixing diagrams in markdown files. Ensures cross-platform compatibility and avoids common rendering bugs."
+description: "Create Mermaid diagrams compatible with Obsidian, GitHub, and Notion. Use when creating or fixing Mermaid code blocks inside Markdown (.md) files. Ensures cross-platform compatibility and avoids common rendering bugs. Scope: Mermaid in Markdown rendered by Obsidian/GitHub/Notion — for Mermaid inside a standalone HTML page use the visual-explainer skill, whose rules deliberately differ."
 argument-hint: <diagram-type> <description> | fix <file>
 ---
 
 # Mermaid Diagram Generator
 
 Generate Mermaid diagrams that render correctly across Obsidian, GitHub, and Notion.
+
+> **Scope.** These rules target Mermaid **code blocks inside Markdown** rendered by Obsidian/GitHub/Notion, whose renderers are stricter (e.g. no `<br/>` in labels, no `%%{init}%%`). If you are instead embedding Mermaid in a **standalone HTML page**, use the `visual-explainer` skill — it bundles a full Mermaid runtime, so its rules (which *do* allow `<br/>` and `init`) apply there. The two are not contradictory; they target different renderers.
 
 ## How to Use
 

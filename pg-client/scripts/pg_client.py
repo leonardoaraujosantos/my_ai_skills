@@ -10,6 +10,8 @@ Connection profiles are saved for reuse.
 import argparse
 import json
 import os
+import re
+import secrets
 import sys
 import csv as csv_mod
 import time
@@ -20,6 +22,7 @@ from typing import Optional
 
 import psycopg2
 import psycopg2.extras
+from psycopg2 import sql
 
 PROFILES_FILE = Path.home() / ".claude" / "skills" / "pg-client" / "profiles.json"
 
@@ -33,6 +36,11 @@ def load_profiles() -> dict:
 def save_profiles(profiles: dict):
     PROFILES_FILE.parent.mkdir(parents=True, exist_ok=True)
     PROFILES_FILE.write_text(json.dumps(profiles, indent=2))
+    # DSNs contain passwords — keep the file owner-only.
+    try:
+        os.chmod(PROFILES_FILE, 0o600)
+    except OSError:
+        pass
 
 def cmd_profile_add(args):
     profiles = load_profiles()
@@ -157,17 +165,20 @@ def format_rows(columns, rows, fmt="table"):
 
 def cmd_query(args):
     """Execute a SQL query and display results."""
-    sql = args.sql
-    if sql == "-":
-        sql = sys.stdin.read()
-    elif sql.endswith(".sql") and Path(sql).exists():
-        sql = Path(sql).read_text()
+    query_sql = args.sql
+    if query_sql == "-":
+        query_sql = sys.stdin.read()
+    elif query_sql.endswith(".sql") and Path(query_sql).exists():
+        query_sql = Path(query_sql).read_text()
 
     with get_conn(args) as conn:
-        conn.autocommit = True
+        # `query` is read-only by contract. Enforce it at the database level
+        # so a mutating statement (DROP/DELETE/UPDATE) cannot slip through —
+        # writes must go through `exec`, which runs in a read-write transaction.
+        conn.set_session(readonly=True, autocommit=True)
         start = time.time()
         with conn.cursor() as cur:
-            cur.execute(sql)
+            cur.execute(query_sql)
             elapsed = time.time() - start
 
             if cur.description:
@@ -186,17 +197,17 @@ def cmd_query(args):
 
 def cmd_exec(args):
     """Execute a SQL statement (INSERT/UPDATE/DELETE) with transaction."""
-    sql = args.sql
-    if sql == "-":
-        sql = sys.stdin.read()
-    elif sql.endswith(".sql") and Path(sql).exists():
-        sql = Path(sql).read_text()
+    stmt_sql = args.sql
+    if stmt_sql == "-":
+        stmt_sql = sys.stdin.read()
+    elif stmt_sql.endswith(".sql") and Path(stmt_sql).exists():
+        stmt_sql = Path(stmt_sql).read_text()
 
     with get_conn(args) as conn:
         start = time.time()
         try:
             with conn.cursor() as cur:
-                cur.execute(sql)
+                cur.execute(stmt_sql)
                 elapsed = time.time() - start
                 rowcount = cur.rowcount
 
@@ -216,12 +227,12 @@ def cmd_exec(args):
 
 def cmd_explain(args):
     """Run EXPLAIN ANALYZE on a query."""
-    sql = f"EXPLAIN (ANALYZE, BUFFERS, FORMAT {'JSON' if args.format == 'json' else 'TEXT'}) {args.sql}"
+    explain_sql = f"EXPLAIN (ANALYZE, BUFFERS, FORMAT {'JSON' if args.format == 'json' else 'TEXT'}) {args.sql}"
 
     with get_conn(args) as conn:
         conn.autocommit = True
         with conn.cursor() as cur:
-            cur.execute(sql)
+            cur.execute(explain_sql)
             rows = cur.fetchall()
             if args.format == "json":
                 print(json.dumps(rows[0][0], indent=2))
@@ -296,7 +307,8 @@ def cmd_describe(args):
             AND tc.constraint_type = 'FOREIGN KEY'
     """
 
-    sql_row_count = f"SELECT count(*) FROM {schema}.{table}"
+    sql_row_count = sql.SQL("SELECT count(*) FROM {}.{}").format(
+        sql.Identifier(schema), sql.Identifier(table))
 
     with get_conn(args) as conn:
         conn.autocommit = True
@@ -516,11 +528,16 @@ def cmd_search(args):
                 print(f"No text columns found in {schema}.{table}")
                 return
 
-            conditions = " OR ".join(f'"{col}"::text ILIKE %s' for col in text_cols)
-            sql = f"SELECT * FROM {schema}.{table} WHERE {conditions} LIMIT %s"
+            conditions = sql.SQL(" OR ").join(
+                sql.SQL("{}::text ILIKE %s").format(sql.Identifier(col))
+                for col in text_cols
+            )
+            search_sql = sql.SQL("SELECT * FROM {}.{} WHERE {} LIMIT %s").format(
+                sql.Identifier(schema), sql.Identifier(table), conditions
+            )
             params = [f"%{pattern}%"] * len(text_cols) + [args.limit or 50]
 
-            cur.execute(sql, params)
+            cur.execute(search_sql, params)
             columns = [desc[0] for desc in cur.description]
             rows = cur.fetchall()
             print(format_rows(columns, rows, args.format))
@@ -531,15 +548,16 @@ def cmd_sample(args):
     table = args.table
     schema = args.schema or "public"
     n = args.limit or 10
-    sql = f"SELECT * FROM {schema}.{table} TABLESAMPLE BERNOULLI(10) LIMIT %s"
+    base = sql.SQL("SELECT * FROM {}.{}").format(
+        sql.Identifier(schema), sql.Identifier(table))
     with get_conn(args) as conn:
         conn.autocommit = True
         with conn.cursor() as cur:
             try:
-                cur.execute(sql, (n,))
+                cur.execute(base + sql.SQL(" TABLESAMPLE BERNOULLI(10) LIMIT %s"), (n,))
             except Exception:
                 # Fallback for views or tables that don't support TABLESAMPLE
-                cur.execute(f"SELECT * FROM {schema}.{table} ORDER BY random() LIMIT %s", (n,))
+                cur.execute(base + sql.SQL(" ORDER BY random() LIMIT %s"), (n,))
             columns = [desc[0] for desc in cur.description]
             rows = cur.fetchall()
             print(format_rows(columns, rows, args.format))
@@ -550,13 +568,18 @@ def cmd_dump_table(args):
     table = args.table
     schema = args.schema or "public"
 
+    tbl = sql.SQL("{}.{}").format(sql.Identifier(schema), sql.Identifier(table))
     with get_conn(args) as conn:
         conn.autocommit = True
         with conn.cursor() as cur:
-            limit_clause = f"LIMIT {args.limit}" if args.limit else ""
-            cur.execute(f"SELECT * FROM {schema}.{table} {limit_clause}")
+            select_sql = sql.SQL("SELECT * FROM ") + tbl
+            if args.limit:
+                cur.execute(select_sql + sql.SQL(" LIMIT %s"), (args.limit,))
+            else:
+                cur.execute(select_sql)
             columns = [desc[0] for desc in cur.description]
             rows = cur.fetchall()
+            table_ref = tbl.as_string(cur)
 
             if args.format == "csv":
                 print(format_rows(columns, rows, "csv"))
@@ -578,7 +601,7 @@ def cmd_dump_table(args):
                             vals.append(f"'{escaped}'")
                     cols_str = ", ".join(f'"{c}"' for c in columns)
                     vals_str = ", ".join(vals)
-                    print(f"INSERT INTO {schema}.{table} ({cols_str}) VALUES ({vals_str});")
+                    print(f"INSERT INTO {table_ref} ({cols_str}) VALUES ({vals_str});")
                 print(f"\n-- {len(rows)} rows")
 
 
@@ -832,9 +855,35 @@ def _get_db_name(args) -> str:
 
 # ─── Apache AGE Graph Queries ────────────────────────────────────────────────
 
+_GRAPH_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def _safe_graph_name(name: str) -> str:
+    """Validate an Apache AGE graph name before it is interpolated into SQL.
+
+    AGE's cypher()/create_graph() take the graph name as a literal, so it
+    cannot be passed as a bound parameter. Restricting it to a strict SQL
+    identifier makes interpolation injection-safe.
+    """
+    if not name or not _GRAPH_NAME_RE.match(name):
+        print(f"Error: invalid graph name '{name}'. "
+              "Allowed: letters, digits, underscore; must start with a letter or underscore.")
+        sys.exit(1)
+    return name
+
+
+def _cypher_literal(cypher: str) -> str:
+    """Dollar-quote a Cypher body with a randomized tag so its contents can't
+    terminate the quoting and inject raw SQL (e.g. a query containing `$$`)."""
+    tag = f"$cy{secrets.token_hex(4)}$"
+    while tag in cypher:
+        tag = f"$cy{secrets.token_hex(4)}$"
+    return f"{tag} {cypher} {tag}"
+
+
 def cmd_graph(args):
     """Execute an Apache AGE graph query (Cypher)."""
-    graph_name = args.graph
+    graph_name = _safe_graph_name(args.graph)
     cypher = args.cypher
 
     with get_conn(args) as conn:
@@ -845,10 +894,10 @@ def cmd_graph(args):
             cur.execute("SET search_path = ag_catalog, '$user', public;")
 
             # Wrap in age_cypher function
-            sql = f"SELECT * FROM cypher('{graph_name}', $$ {cypher} $$) as (result agtype);"
+            cypher_sql = f"SELECT * FROM cypher('{graph_name}', {_cypher_literal(cypher)}) as (result agtype);"
 
             start = time.time()
-            cur.execute(sql)
+            cur.execute(cypher_sql)
             elapsed = time.time() - start
 
             if cur.description:
@@ -900,7 +949,7 @@ def cmd_graph_list(args):
 
 def cmd_graph_schema(args):
     """Show graph schema — node labels and edge types."""
-    graph_name = args.graph
+    graph_name = _safe_graph_name(args.graph)
     with get_conn(args) as conn:
         conn.autocommit = True
         with conn.cursor() as cur:
@@ -934,7 +983,7 @@ def cmd_graph_schema(args):
                 for label in labels[:10]:
                     print(f"\n  [{label}]:")
                     try:
-                        cur.execute(f"SELECT * FROM cypher('{graph_name}', $$ MATCH (n:{label}) RETURN n LIMIT 3 $$) as (n agtype);")
+                        cur.execute(f"SELECT * FROM cypher('{graph_name}', {_cypher_literal(f'MATCH (n:{label}) RETURN n LIMIT 3')}) as (n agtype);")
                         for row in cur.fetchall():
                             print(f"    {row[0]}")
                     except Exception:
@@ -945,25 +994,27 @@ def cmd_graph_schema(args):
 
 def cmd_graph_create(args):
     """Create a new graph."""
+    graph_name = _safe_graph_name(args.graph)
     with get_conn(args) as conn:
         conn.autocommit = True
         with conn.cursor() as cur:
             cur.execute("LOAD 'age';")
             cur.execute("SET search_path = ag_catalog, '$user', public;")
-            cur.execute(f"SELECT create_graph('{args.graph}');")
-            print(f"Graph '{args.graph}' created.")
+            cur.execute(f"SELECT create_graph('{graph_name}');")
+            print(f"Graph '{graph_name}' created.")
 
 
 def cmd_graph_drop(args):
     """Drop a graph."""
+    graph_name = _safe_graph_name(args.graph)
     with get_conn(args) as conn:
         conn.autocommit = True
         with conn.cursor() as cur:
             cur.execute("LOAD 'age';")
             cur.execute("SET search_path = ag_catalog, '$user', public;")
             cascade = "true" if args.cascade else "false"
-            cur.execute(f"SELECT drop_graph('{args.graph}', {cascade});")
-            print(f"Graph '{args.graph}' dropped.")
+            cur.execute(f"SELECT drop_graph('{graph_name}', {cascade});")
+            print(f"Graph '{graph_name}' dropped.")
 
 
 # ─── Supabase-Specific ───────────────────────────────────────────────────────

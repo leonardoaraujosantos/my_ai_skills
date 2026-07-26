@@ -41,7 +41,8 @@ from pathlib import Path
 import random
 
 # Configuration
-OBSIDIAN_VAULT = Path("/Users/leonardoaraujo/work/leo-obsidian-vault")
+# Vault location is configurable via the OBSIDIAN_VAULT env var.
+OBSIDIAN_VAULT = Path(os.environ.get("OBSIDIAN_VAULT", Path.home() / "obsidian-vault"))
 JOURNAL_DIR = OBSIDIAN_VAULT / "Journal"
 DAILY_DIR = JOURNAL_DIR / "Daily"
 
@@ -207,6 +208,11 @@ def cmd_add(text, mood=None, energy=None, section=None, tags=None, date=None):
         entry_parts.append(f" {ENERGY[energy]}")
 
     entry_parts.append(f"\n{text}\n")
+
+    if tags:
+        tag_line = " ".join(f"#{t.strip()}" for t in tags.split(",") if t.strip())
+        if tag_line:
+            entry_parts.append(f"{tag_line}\n")
 
     entry = "".join(entry_parts)
 
