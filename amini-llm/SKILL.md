@@ -83,7 +83,20 @@ python3 $CLI think "If a train leaves 9:15 and takes 95 min, when does it arrive
 python3 $CLI vision "What is the total?" --image invoice.png
 python3 $CLI ocr --image scan.png
 python3 $CLI embed "first text" "second text"
+
+python3 $CLI bench                        # single-stream tok/s + TTFT
+python3 $CLI bench --all                  # every mode below
+python3 $CLI bench --rtt                  # tunnel round-trip floor
+python3 $CLI bench --concurrency          # aggregate tok/s at 1/2/4/8 streams
+python3 $CLI bench --prefill              # prompt-processing rate at 2k/8k/24k
+python3 $CLI bench --embed                # embedding throughput at batch 1/32/256
+python3 $CLI bench --model vision-v1 --runs 6
 ```
+
+Use `bench` rather than writing throughput code by hand — it already handles the
+methodology traps: a per-run nonce defeats vLLM prefix caching (without it you measure
+a cache hit), the clock starts *before* the request so TTFT includes the tunnel, and
+decode rate excludes TTFT so prefill does not inflate it.
 
 Flags: `--model`, `--max-tokens`, `--system`, `--temperature`, `--stream`, `--json`,
 `--raw` (full JSON), `--image` (repeatable; local path or URL).
@@ -172,16 +185,67 @@ vectors = [d.embedding for d in r.data]     # 4096 dims each, input order preser
 
 Size vector columns at **4096** (e.g. `vector(4096)` in pgvector).
 
+## Performance baseline
+
+Measured with `bench --all` (2026-09-09). Re-run it to compare rather than trusting
+these numbers indefinitely.
+
+| Model | Decode | TTFT |
+|---|---|---|
+| `chat-v1` | **~205 tok/s** | ~580 ms |
+| `chat-think-v1` | ~205 tok/s | ~580 ms |
+| `vision-v1` | ~164 tok/s | ~500 ms |
+| `ocr-v1` | ~143 tok/s | ~480 ms |
+
+Single-stream decode is fast because these are A3B mixture-of-experts models — only
+~3B parameters are active per token — served tensor-parallel across 2 GPUs.
+
+**The tunnel is the latency floor.** A round-trip to the gateway is ~320 ms on a pooled
+connection and ~480 ms on a fresh one. Traefik on `:8080` on the same host measures
+identically, so this is network, not gateway overhead. Roughly half of the ~580 ms TTFT
+is transport. Two consequences:
+
+- **Reuse one client.** A new connection per request wastes ~160 ms. The OpenAI SDK pools
+  by default, so build the client once and keep it.
+- Nothing you do to the prompt will get you under the floor for a single short call.
+
+**Concurrency scales well** — batch work rather than serializing it:
+
+| Streams | Aggregate | Per-stream |
+|---|---|---|
+| 1 | 127 tok/s | 127 |
+| 2 | 217 tok/s | 109 |
+| 4 | **417 tok/s** | 105 |
+| 8 | 480 tok/s | 79 |
+
+Near-linear to 4 (3.3x aggregate for a 20% per-stream cost), with the knee at 8.
+
+**Prefill is cheap and improves with size** — 3.2k tok/s at a 2.3k prompt, 7.9k at 9k,
+**15.4k tok/s at 27k tokens** (the fixed round-trip amortizes away). Stuffing 27k tokens
+of context costs under 2 seconds, so long-context RAG on `chat-v1` is affordable.
+
+**Embeddings must be batched** — batch 1 is 1.2 texts/s, batch 32 is 13.1, batch 256 is
+~15-19. That is a **13x speedup**; a single-text embed is almost entirely round-trip.
+Never embed in a per-item loop.
+
 ## Gotchas
 
 These each cost real debugging time:
 
 1. **`embed-v1` context is only 2,048 tokens** — far smaller than the chat models. Chunk
    before embedding or you get `ContextWindowExceededError`.
-2. **`chat-think-v1` with a small `max_tokens` returns empty `content`.** The budget
-   covers reasoning *plus* the answer, so a low ceiling is spent thinking and truncated
-   before any answer is emitted. Use **512 minimum**, 2048+ for real problems. A
-   `finish_reason: "length"` with empty content is always this.
+2. **Empty `content` with `finish_reason: "length"` means reasoning ate the budget.**
+   The output budget covers reasoning *plus* the answer, so a low ceiling gets spent
+   thinking and truncated before any answer is emitted. For `chat-think-v1` use **512
+   minimum**, 2048+ for real problems — 800 tokens was still not enough for a
+   three-step word problem in testing.
+
+   This bites `chat-v1` too. Despite `enable_thinking: False`, it **intermittently**
+   emits a thinking preamble — observed in roughly 1-3 of 8 identical calls at default
+   temperature. With a tight budget that produces empty `content`; with ~256 tokens of
+   headroom it recovers and answers normally. So: give `chat-v1` at least 256 tokens
+   even for one-word answers, use `temperature: 0` when you need short deterministic
+   replies, and always handle an empty `content` rather than assuming it cannot happen.
 3. **`ocr-v1` has a 16,384-token context** and no tool calling. One page per request.
 4. **No fallbacks are configured** (`Available Model Group Fallbacks=None`). A dead
    backend is a hard 500 to the caller, not a silent downgrade — handle it client-side.

@@ -19,6 +19,15 @@ Commands:
     vision <prompt> --image <path|url>  Multimodal (repeatable --image)
     ocr --image <path>                  Verbatim text transcription
     embed <text> [<text>...]            Embeddings (4096 dims)
+    bench [--all|--decode|--rtt|...]    Measure tokens/sec (see below)
+
+Benchmark modes (default --decode; combine freely, or --all):
+    --decode         Single-stream decode tok/s and TTFT
+    --concurrency    Aggregate throughput at 1/2/4/8 parallel streams
+    --prefill        Prompt-processing rate at 2k/8k/24k tokens
+    --embed          Embedding throughput at batch 1/32/256
+    --rtt            Network round-trip floor, pooled vs fresh connection
+    --runs <n>       Repetitions for --decode (default 4)
 
 Options:
     --model <alias>      Override the alias for chat/think/vision/ocr/embed
@@ -31,12 +40,19 @@ Options:
 """
 
 import base64
+import http.client
 import json
 import mimetypes
 import os
+import random
+import statistics
+import string
 import sys
+import time
 import urllib.error
+import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 
 DEFAULT_BASE_URL = "http://10.10.20.4:4000/v1"
 TIMEOUT = 300
@@ -237,17 +253,23 @@ def print_message(choice):
         print(f"[tool_call] {call['function']['name']}({call['function']['arguments']})")
 
 
-def stream_chat(payload):
-    payload["stream"] = True
-    resp = request("/chat/completions", payload, stream=True)
+def sse_events(resp):
+    """Yield decoded JSON objects from an OpenAI-style SSE stream."""
     for line in resp:
         text = line.decode(errors="replace").strip()
         if not text.startswith("data:"):
             continue
         blob = text[5:].strip()
         if blob == "[DONE]":
-            break
-        delta = json.loads(blob)["choices"][0].get("delta", {})
+            return
+        yield json.loads(blob)
+
+
+def stream_chat(payload):
+    payload["stream"] = True
+    resp = request("/chat/completions", payload, stream=True)
+    for obj in sse_events(resp):
+        delta = obj["choices"][0].get("delta", {})
         sys.stdout.write(delta.get("content") or "")
         sys.stdout.flush()
     print()
@@ -293,6 +315,186 @@ def cmd_embed(opts):
     print(f"usage: {out.get('usage')}")
 
 
+
+# ---------------------------------------------------------------- benchmark
+
+BENCH_TOPICS = [
+    "how a B-tree index works", "write-ahead logging", "MVCC snapshot isolation",
+    "LSM-tree compaction", "vectorized query execution", "two-phase commit",
+    "consistent hashing", "bloom filters",
+]
+
+
+def bench_prompt(index):
+    """A unique prompt per run: a nonce defeats vLLM prefix caching."""
+    nonce = "".join(random.choices(string.ascii_lowercase, k=6))
+    topic = BENCH_TOPICS[index % len(BENCH_TOPICS)]
+    return f"[{nonce}] Explain in technical detail {topic}. Be thorough."
+
+
+def stream_metrics(model, prompt, max_tokens):
+    """Stream one completion, returning timing instead of text."""
+    payload = {
+        "model": model, "max_tokens": max_tokens, "temperature": 0.7, "stream": True,
+        "stream_options": {"include_usage": True},
+        "messages": [{"role": "user", "content": prompt}],
+    }
+    # Clock starts before the call: urlopen blocks until response headers arrive,
+    # so timing after it would hide both the tunnel round-trip and model prefill.
+    start = time.perf_counter()
+    resp = request("/chat/completions", payload, stream=True)
+    ttft = None
+    last = start
+    usage = None
+    seen = 0
+    for obj in sse_events(resp):
+        usage = obj.get("usage") or usage
+        if not delta_has_text(obj):
+            continue
+        last = time.perf_counter()
+        ttft = ttft if ttft is not None else last - start
+        seen += 1
+    out = (usage or {}).get("completion_tokens") or seen
+    window = max(last - start - (ttft or 0.0), 1e-9)
+    return {
+        "ttft": ttft or 0.0,
+        "total": time.perf_counter() - start,
+        "out": out,
+        "decode": (out - 1) / window if out > 1 else 0.0,
+    }
+
+
+def delta_has_text(obj):
+    for choice in obj.get("choices", []):
+        delta = choice.get("delta") or {}
+        if delta.get("content") or delta.get("reasoning_content"):
+            return True
+    return False
+
+
+def bench_decode(model, runs, max_tokens):
+    print(f"\n== single-stream decode ({model}, {max_tokens} output tokens, n={runs}) ==")
+    results = []
+    for index in range(runs):
+        try:
+            results.append(stream_metrics(model, bench_prompt(index), max_tokens))
+        except SystemExit as exc:
+            print(f"  run {index + 1} failed: {str(exc).splitlines()[0]}")
+    if not results:
+        return
+    decodes = [r["decode"] for r in results]
+    ttfts = [r["ttft"] for r in results]
+    print(f"  decode  median {statistics.median(decodes):7.1f} tok/s"
+          f"   runs: {', '.join(f'{d:.1f}' for d in decodes)}")
+    print(f"  TTFT    median {statistics.median(ttfts) * 1000:7.0f} ms"
+          f"      runs: {', '.join(f'{t * 1000:.0f}' for t in ttfts)}")
+    print("  (TTFT includes the tunnel round-trip - run `bench --rtt` to size it)")
+
+
+def bench_concurrency(model, levels, max_tokens):
+    print(f"\n== aggregate throughput under concurrency ({model}, {max_tokens} tok each) ==")
+    for level in levels:
+        start = time.perf_counter()
+        with ThreadPoolExecutor(max_workers=level) as pool:
+            results = list(pool.map(
+                lambda i: stream_metrics(model, bench_prompt(i), max_tokens), range(level)))
+        wall = time.perf_counter() - start
+        produced = sum(r["out"] for r in results)
+        per_stream = statistics.median(r["out"] / r["total"] for r in results)
+        print(f"  concurrency={level:<3} aggregate {produced / wall:7.1f} tok/s   "
+              f"per-stream {per_stream:6.1f} tok/s   wall {wall:5.2f}s")
+
+
+def bench_prefill(model, sizes):
+    print(f"\n== prompt processing / prefill ({model}, max_tokens=1) ==")
+    words = ["alpha", "beta", "gamma", "delta", "epsilon", "zeta", "kappa"]
+    for size in sizes:
+        filler = " ".join(random.choices(words, k=size))
+        payload = {"model": model, "max_tokens": 1, "temperature": 0,
+                   "messages": [{"role": "user", "content": "Ignore this text:\n" + filler}]}
+        start = time.perf_counter()
+        out = request("/chat/completions", payload)
+        elapsed = time.perf_counter() - start
+        tokens = out["usage"]["prompt_tokens"]
+        print(f"  prompt {tokens:7d} tok   {elapsed:5.2f}s   {tokens / elapsed:8.0f} tok/s")
+
+
+def bench_embed(model, batches):
+    print(f"\n== embedding throughput ({model}) ==")
+    words = ["data", "model", "vector", "index", "query"]
+    for size in batches:
+        texts = [" ".join(random.choices(words, k=60)) for _ in range(size)]
+        start = time.perf_counter()
+        out = request("/embeddings", {"model": model, "input": texts})
+        elapsed = time.perf_counter() - start
+        tokens = out["usage"]["prompt_tokens"]
+        print(f"  batch {size:4d}   {elapsed:6.2f}s   {size / elapsed:7.1f} texts/s   "
+              f"{tokens / elapsed:7.0f} tok/s")
+
+
+def bench_rtt():
+    """Isolate tunnel latency from model time using a trivial unauthenticated route."""
+    print("\n== network round-trip to the gateway ==")
+    parsed = urllib.parse.urlparse(root_url())
+    port = parsed.port or 80
+    warm = time_requests(parsed.hostname, port, reuse=True)
+    cold = time_requests(parsed.hostname, port, reuse=False)
+    if warm:
+        print(f"  reused connection  median {statistics.median(warm) * 1000:6.0f} ms")
+    if cold:
+        print(f"  fresh connection   median {statistics.median(cold) * 1000:6.0f} ms"
+              "   <- the delta is per-connection setup; pool your client")
+    print("  This floor is paid by every request before any compute happens.")
+
+
+def time_requests(host, port, reuse, count=6):
+    latencies = []
+    conn = http.client.HTTPConnection(host, port, timeout=20) if reuse else None
+    for _ in range(count):
+        if not reuse:
+            conn = http.client.HTTPConnection(host, port, timeout=20)
+        start = time.perf_counter()
+        try:
+            conn.request("GET", "/health/liveliness")
+            conn.getresponse().read()
+        except OSError:
+            return latencies
+        latencies.append(time.perf_counter() - start)
+        if not reuse:
+            conn.close()
+    if reuse:
+        conn.close()
+        return latencies[1:]          # drop the first: it pays connection setup
+    return latencies
+
+
+BENCH_MODES = ("rtt", "decode", "concurrency", "prefill", "embed")
+
+
+def cmd_bench(opts):
+    model = opts.get("model") or MODELS["chat"]
+    max_tokens = opts.get("max_tokens", 300)
+    selected = select_bench_modes(opts)
+    actions = {
+        "rtt": bench_rtt,
+        "decode": lambda: bench_decode(model, opts.get("runs", 4), max_tokens),
+        "concurrency": lambda: bench_concurrency(model, [1, 2, 4, 8], min(max_tokens, 200)),
+        "prefill": lambda: bench_prefill(model, [2000, 8000, 24000]),
+        "embed": lambda: bench_embed(MODELS["embed"], [1, 32, 256]),
+    }
+    print(f"gateway: {base_url()}")
+    for mode in BENCH_MODES:
+        if mode in selected:
+            actions[mode]()
+
+
+def select_bench_modes(opts):
+    if opts.get("all"):
+        return set(BENCH_MODES)
+    chosen = {mode for mode in BENCH_MODES if opts.get(mode)}
+    return chosen or {"decode"}
+
+
 COMMANDS = {
     "models": cmd_models,
     "health": cmd_health,
@@ -302,6 +504,7 @@ COMMANDS = {
     "vision": cmd_vision,
     "ocr": cmd_ocr,
     "embed": cmd_embed,
+    "bench": cmd_bench,
 }
 
 FLAGS_WITH_VALUE = {
@@ -310,6 +513,7 @@ FLAGS_WITH_VALUE = {
     "--system": ("system", str),
     "--temperature": ("temperature", float),
     "--image": ("images", str),
+    "--runs": ("runs", int),
 }
 
 
@@ -325,7 +529,8 @@ def parse_args(argv):
                 die(f"{token} needs a value")
             value = cast(argv[index])
             opts["images"].append(value) if key == "images" else opts.update({key: value})
-        elif token in ("--stream", "--json", "--raw"):
+        elif token in ("--stream", "--json", "--raw", "--all", "--decode",
+                       "--concurrency", "--prefill", "--embed", "--rtt"):
             opts[token.lstrip("-")] = True
         elif token.startswith("--"):
             die(f"unknown flag: {token}")
