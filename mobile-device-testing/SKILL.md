@@ -1,7 +1,7 @@
 ---
 name: mobile-device-testing
 description: Run mobile tests on real connected devices and device farms - iOS physical-device prerequisites (Developer Mode, pairing, wireless), XCUITest on hardware with signing/error fixes, build-once .xctestrun distribution, Maestro cross-platform YAML UI flows, Firebase Test Lab (Android+iOS), Gradle-managed devices, and farm routing (AWS/BrowserStack/Sauce). Use when the user says "run tests on my iPhone/Android phone", "test on a real device", "device farm / Firebase Test Lab", "write a Maestro flow", "UI test this app end-to-end", or "the test runner won't install on device".
-argument-hint: [ios|android|maestro|farm] [action]
+argument-hint: "[ios|android|maestro|farm] [action]"
 ---
 
 # Mobile Device Testing Skill

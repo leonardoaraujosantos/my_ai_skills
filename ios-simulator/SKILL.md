@@ -1,7 +1,7 @@
 ---
 name: ios-simulator
 description: Drive the iOS Simulator from the CLI with xcrun simctl - boot/erase devices, install/launch apps with env vars, deep links, simulated push notifications, permission grants, screenshots/video with clean status bar, location/route simulation, log streaming, and stuck-simulator fixes. Use when the user says "run this on the simulator", "take a simulator screenshot", "test this deep link/push notification", "grant photo/location permission", "simulator won't boot", or "free up simulator disk space".
-argument-hint: [device] [action]
+argument-hint: "[device] [action]"
 ---
 
 # iOS Simulator Skill

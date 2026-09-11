@@ -1,7 +1,7 @@
 ---
 name: unity
 description: Manage Unity Editors, projects, builds, and tests with the standalone `unity` CLI, and wire the Unity Editor to AI agents over MCP. Use when the user wants to install/switch Unity Editor versions, create or open a Unity project, run a headless build or EditMode/PlayMode tests, drive a running Editor from the terminal, set up Unity CI, or connect Claude Code to the Unity Editor MCP server.
-argument-hint: [command] [args...]
+argument-hint: "[command] [args...]"
 ---
 
 # Unity CLI Skill

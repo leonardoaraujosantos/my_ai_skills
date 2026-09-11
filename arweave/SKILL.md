@@ -1,7 +1,7 @@
 ---
 name: arweave
 description: Operate Arweave and AO as a developer — permanent storage uploads (Turbo SDK/CLI, arweave-js), GraphQL queries by tags, permaweb site deploys (manifests, ArNS, ario-deploy/@permaweb/deploy), and AO hyperparallel compute (aos REPL, Lua handlers, aoconnect, HyperBEAM HTTP state reads). Includes wallet/keyfile handling, cost estimation, and privacy rules for immutable public storage. Use when the user says "upload to arweave", "permaweb", "permanent storage", "deploy to arweave/ArNS", "AO process", "aos", "aoconnect", "HyperBEAM", "Turbo credits", "query arweave", or "SmartWeave".
-argument-hint: [upload|query|deploy|ao] [topic]
+argument-hint: "[upload|query|deploy|ao] [topic]"
 ---
 
 # Arweave & AO — Developer Operations

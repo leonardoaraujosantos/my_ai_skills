@@ -1,7 +1,7 @@
 ---
 name: mobile-profiling
 description: Profile native mobile apps from the CLI - iOS Instruments via xcrun xctrace (Time Profiler, Allocations, Hangs, App Launch, SwiftUI), leaks/heap/vmmap against simulator processes, os_signpost custom timing, MetricKit field data; Android Perfetto system traces with trace_processor SQL, Macrobenchmark startup/frame metrics, Baseline Profiles, simpleperf CPU profiling, heap dumps and gfxinfo jank stats. Use when the user says "profile this app", "why is startup slow", "find the memory leak", "measure jank/frame drops", "record a trace", or "CPU/memory profiling on device".
-argument-hint: [ios|android] [cpu|memory|startup|jank]
+argument-hint: "[ios|android] [cpu|memory|startup|jank]"
 ---
 
 # Mobile Profiling Skill

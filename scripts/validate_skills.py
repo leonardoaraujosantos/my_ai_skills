@@ -10,10 +10,14 @@ Checks (hard errors, exit 1):
   * every skill appears in the README "Skills at a Glance" mermaid mindmap,
     and the mindmap lists no skill that doesn't exist
   * every skill has a `## <name>` body section in the README, in alphabetical order
+  * `argument-hint` is quoted when its value starts with a YAML indicator, so the
+    frontmatter stays parseable (an unquoted `[a|b] [args...]` reads as a flow
+    sequence followed by junk, which a real YAML parser rejects)
 
 Warnings (exit 0): missing `argument-hint`.
 
-Stdlib only so it runs in CI without installing anything.
+Stdlib only so it runs in CI without installing anything — hence the targeted
+indicator check below rather than a full YAML parse.
 """
 
 import re
@@ -21,6 +25,14 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+
+# A YAML plain scalar may not begin with one of these; a value that does must be
+# quoted or the frontmatter will not parse.
+YAML_INDICATORS = set("[]{},&*!|>%@`")
+
+
+def is_quoted(value: str) -> bool:
+    return len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'"
 
 
 def read_frontmatter(path: Path):
@@ -62,8 +74,14 @@ def main() -> int:
             errors.append(f"{name}/SKILL.md: name '{keys.get('name')}' does not match directory '{name}'")
         if not keys.get("description"):
             errors.append(f"{name}/SKILL.md: missing 'description'")
-        if "argument-hint" not in keys:
+        hint = keys.get("argument-hint")
+        if hint is None:
             warnings.append(f"{name}/SKILL.md: no 'argument-hint'")
+        elif hint[:1] in YAML_INDICATORS and not is_quoted(hint):
+            errors.append(
+                f"{name}/SKILL.md: argument-hint starts with '{hint[:1]}' and must be "
+                f"quoted, else the frontmatter is not valid YAML"
+            )
 
     # docs/SKILLS.md — the complete overview table
     skills_doc = ROOT / "docs" / "SKILLS.md"
