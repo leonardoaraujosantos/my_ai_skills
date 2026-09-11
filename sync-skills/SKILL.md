@@ -1,7 +1,7 @@
 ---
 name: sync-skills
 description: Sync Claude Code skills to GitHub repository. Use when you want to backup skills, update the repo after creating/modifying a skill, or share skills.
-argument-hint: [--skill <name>] [--message "commit message"] [--dry-run] [--list]
+argument-hint: '[--skill <name>] [--message "commit message"] [--dry-run] [--list]'
 ---
 
 # Sync Skills to GitHub

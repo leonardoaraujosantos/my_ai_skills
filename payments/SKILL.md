@@ -1,7 +1,7 @@
 ---
 name: payments
 description: Cross-platform payment and subscription development/debugging playbooks for Stripe (web), Apple StoreKit 2 / App Store Connect (iOS), and Google Play Billing (Android). Covers webhook and server-notification testing, sandbox/test-mode workflows, accelerated subscription renewals, entitlement architecture, and failure decision trees. Use when the user says "debug this payment/purchase", "test my subscription flow", "webhooks aren't arriving", "products not loading", "IAP sandbox", "stripe test/trigger/test clock", "RTDN", "App Store Server Notifications", or "why was this purchase refunded".
-argument-hint: [stripe|ios|android|architecture] [topic]
+argument-hint: "[stripe|ios|android|architecture] [topic]"
 ---
 
 # Payments Skill

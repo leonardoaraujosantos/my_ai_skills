@@ -1,7 +1,7 @@
 ---
 name: cognitive-complexity
 description: Measure Cognitive Complexity (SonarSource metric — how hard code is for a human to read) of a folder of C/C++, Python, Go, TypeScript/JavaScript, Solidity, or SystemVerilog code. Reports a ranked, banded list of the most complex functions so you can target refactors. Uses installed open-source analyzers (complexipy, gocognit, eslint-plugin-sonarjs, clang-tidy, solhint, scc) — it does not re-implement the metric, and clearly labels languages where only cyclomatic (Solidity) or a per-file estimate (SystemVerilog) is available. Triggers — "cognitive complexity", "how complex is this code", "which functions need refactoring", "complexity report", "smart contract complexity", "solidity complexity", "RTL/SystemVerilog complexity".
-argument-hint: [path ...] [--top N] [--threshold N] [--lang python,go,ts,c,cpp,solidity,sv] [--json]
+argument-hint: "[path ...] [--top N] [--threshold N] [--lang python,go,ts,c,cpp,solidity,sv] [--json]"
 allowed-tools: Bash(python3:*), Bash(bash:*), Bash(node:*), Bash(complexipy:*), Bash(gocognit:*), Bash(clang-tidy:*), Bash(lizard:*), Bash(solhint:*), Bash(scc:*), Read, Glob, Grep
 ---
 

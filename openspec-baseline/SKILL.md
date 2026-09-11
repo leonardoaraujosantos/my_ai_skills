@@ -1,7 +1,7 @@
 ---
 name: openspec-baseline
 description: Onboard an existing codebase onto OpenSpec end-to-end - initialize openspec/, reverse-engineer capability-scoped baseline specs from the current implementation (code, tests, docs, ADRs), add an openspec-validate job to CI, and open a PR. Use on brownfield projects that have no openspec/ directory yet, or when asked to "create the openspec of this project", "baseline this codebase", "document current behavior as specs", or "add openspec validation to CI".
-argument-hint: [optional focus areas or "no-pr" to skip the PR]
+argument-hint: '[optional focus areas or "no-pr" to skip the PR]'
 ---
 
 # OpenSpec Baseline — Onboard an Existing Codebase

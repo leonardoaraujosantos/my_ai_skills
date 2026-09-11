@@ -1,7 +1,7 @@
 ---
 name: dep-audit
 description: Multi-ecosystem dependency audit - scan for vulnerable and outdated packages (npm, Python, Go, Rust, Ruby, PHP) and produce a prioritized upgrade plan. Reports and plans only; never mutates the project. Use when the user asks to "audit dependencies", "check for vulnerable/outdated packages", "npm audit", "CVE check", "is anything outdated", or wants an "upgrade plan".
-argument-hint: [path] [--fix-plan] [--prod-only]
+argument-hint: "[path] [--fix-plan] [--prod-only]"
 ---
 
 # Dependency Audit
