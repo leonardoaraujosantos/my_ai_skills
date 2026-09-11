@@ -4,16 +4,19 @@ Complete table of every skill in this repository. Each skill name links to its d
 
 | Skill | Description | Dependencies |
 |-------|-------------|--------------|
+| [amini-llm](../README.md#amini-llm) | On-prem OpenAI-compatible LLM gateway: chat, reasoning, vision, OCR, embeddings | `AMINI_LLM_API_KEY` env var + Twingate access |
 | [android-tools](../README.md#android-tools) | Android emulator/adb/logcat recipes, ANR & Gradle build triage | Android SDK (`adb`, `emulator`, `avdmanager`) |
 | [api-client](../README.md#api-client) | HTTP client with saved request collections & environments (a CLI Postman) | None |
 | [app-showcase](../README.md#app-showcase) | Build a pitch deck or screenshot-driven manual from a live app | `playwright`, `gws` |
 | [arweave](../README.md#arweave) | Arweave/AO ops: permanent uploads (Turbo), GraphQL, permaweb/ArNS deploys, aos + aoconnect; spending & permanence gated | Per-task npm: `@ardrive/turbo-sdk`, `@permaweb/aoconnect`, `@ar.io/deploy`, `aos` CLI |
+| [blender-mcp](../README.md#blender-mcp) | Drive Blender over MCP: model, material, rig, skin, animate, IK, game-ready FBX | Blender + Blender Lab MCP add-on, `uv` |
 | [bookmarks](../README.md#bookmarks) | Save URLs to Obsidian vault | `requests`, `beautifulsoup4` |
 | [code-review](../README.md#code-review) | Review code for architecture, security & test coverage | None |
 | [cognitive-complexity](../README.md#cognitive-complexity) | Measure & rank Cognitive Complexity to target refactors | `complexipy`, `gocognit`, `eslint-plugin-sonarjs`, `clang-tidy`, `solhint`, `scc` |
 | [convert-to-md](../README.md#convert-to-md) | Convert PDF/PPTX to Markdown | `pymupdf`, `python-pptx` |
 | [coolify](../README.md#coolify) | Manage Coolify deployments & env vars via API | None |
 | [csv-tools](../README.md#csv-tools) | CSV manipulation & conversion | None |
+| [data-oriented-cpp](../README.md#data-oriented-cpp) | Design & review hot-loop C++ over large arrays: masks, virtual arrays, COW, parallelism | None |
 | [datasheet](../README.md#datasheet) | Digest component datasheets into structured part cards; compare parts | None |
 | [dep-audit](../README.md#dep-audit) | Multi-ecosystem dependency vulnerability & outdated audit with upgrade plan | Per-ecosystem: `npm`, `pip-audit`, `govulncheck`, `cargo-audit` |
 | [docker-tools](../README.md#docker-tools) | Docker/Compose debugging & maintenance recipes | `docker` CLI |
@@ -51,10 +54,12 @@ Complete table of every skill in this repository. Each skill name links to its d
 | [pg-client](../README.md#pg-client) | PostgreSQL client with graph & RLS support | `psycopg2` |
 | [release-notes](../README.md#release-notes) | Changelog / release notes from git history between refs | `gh` (fallback: github skill) |
 | [rf-tools](../README.md#rf-tools) | RF calculators: link budget, VSWR, Friis NF, matching, microstrip, attenuators | None |
+| [sentry](../README.md#sentry) | Sentry errors, tracing, profiling & replay across Python/JS/Go/mobile/games | `sentry-cli` / `sentry-wizard` per stack |
 | [spice](../README.md#spice) | ngspice batch simulation: AC/tran/DC/op, circuit templates, CSV + ASCII plots | `ngspice` |
 | [study-this](../README.md#study-this) | Process study references & manage Obsidian study notes | `@googleworkspace/cli` (npm), `yt-dlp` |
 | [sync-skills](../README.md#sync-skills) | Sync skills to GitHub repo | None |
 | [transcribe](../README.md#transcribe) | Local Whisper speech-to-text for audio/video (txt/srt/vtt/json/md) | `ffmpeg` + a Whisper backend |
+| [unity](../README.md#unity) | Unity Editors, projects, headless builds & tests via the `unity` CLI, plus Editor MCP | `unity` CLI (beta channel) |
 | [video-tools](../README.md#video-tools) | Video manipulation with ffmpeg: trim, compress, GIF, merge | `ffmpeg` |
 | [visual-explainer](../README.md#visual-explainer) | Generate self-contained HTML diagrams, slide decks & dashboards | None (optional: `surf-cli` for AI images) |
 | [weekly-review](../README.md#weekly-review) | Weekly review note from journal, calendar, tasks & git activity | journal, gws & obsidian skills |

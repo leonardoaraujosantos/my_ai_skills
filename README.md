@@ -25,6 +25,7 @@ mindmap
     Dev Workflow and Code Quality
       code-review
       cognitive-complexity
+      data-oriented-cpp
       dep-audit
       foundry-tools
       github
@@ -41,6 +42,7 @@ mindmap
       mobile-publish
       xcode-tools
     Backend and Infrastructure
+      amini-llm
       api-client
       arweave
       coolify
@@ -49,6 +51,7 @@ mindmap
       mcp-client
       payments
       pg-client
+      sentry
     Security
       pentest
     Electronics and Engineering
@@ -75,6 +78,9 @@ mindmap
       app-showcase
       mermaid
       visual-explainer
+    3D and Game Development
+      blender-mcp
+      unity
 ```
 
 The full table — every skill with its description and dependencies — lives in **[docs/SKILLS.md](docs/SKILLS.md)**. Detailed usage for each skill is in the sections below.
@@ -111,6 +117,46 @@ The merge is idempotent: the template lives between `<!-- my_ai_skills:global-ru
 ## Skills Overview
 
 The complete table — every skill with its description and dependencies — lives in **[docs/SKILLS.md](docs/SKILLS.md)** (kept in sync with the skill directories by CI). The sections below document each skill in detail.
+
+---
+
+## amini-llm
+
+Self-hosted **LiteLLM** proxy fronting vLLM/Qwen3 backends on the GPU host. It speaks the OpenAI API, so any OpenAI SDK, LangChain, LlamaIndex or plain `curl` works by changing only the base URL and key — nothing leaves the internal network. Five aliases: `chat-v1` and `chat-think-v1` (262k context, vision + tools, reasoning on/off), `vision-v1` (multi-image), `ocr-v1` (verbatim transcription, one page at a time), `embed-v1` (4096 dims). Streaming, tool calling, structured output and multi-image were confirmed by live probe rather than inferred from docs.
+
+### Installation
+
+Access is gated by Twingate. The virtual key is a secret and is never committed — get it from the gateway owner or your team's secret store:
+
+```bash
+export AMINI_LLM_BASE_URL="http://10.10.20.4:4000/v1"   # optional, this is the default
+export AMINI_LLM_API_KEY="<your-litellm-virtual-key>"
+```
+
+### Usage
+
+```bash
+CLI="$HOME/.claude/skills/amini-llm/amini_llm_cli.py"
+
+python3 "$CLI" doctor                      # network + auth + live probe of all five aliases
+python3 "$CLI" models                      # aliases + context sizes
+python3 "$CLI" health                      # per-backend up/down
+python3 "$CLI" chat "Capital of Barbados?" --stream
+python3 "$CLI" think "If a train leaves 9:15 and takes 95 min, when does it arrive?"
+python3 "$CLI" vision "What is the total?" --image invoice.png
+python3 "$CLI" ocr --image scan.png
+python3 "$CLI" embed "first text" "second text"
+python3 "$CLI" bench --concurrency         # aggregate tok/s at 1/2/4/8 streams
+```
+
+### Files
+
+```
+amini-llm/
+├── SKILL.md
+├── amini_llm_cli.py
+└── example.env
+```
 
 ---
 
@@ -246,6 +292,45 @@ arweave/
     ├── query.md
     ├── deploy.md
     └── ao.md
+```
+
+---
+
+## blender-mcp
+
+Operate a live Blender session through the **official Blender Lab MCP** server — modeling, geometry nodes, materials and shader-node trees, UV unwrapping, rigging, skinning, animation, IK controls, and game-ready FBX export to Unity/Unreal. Everything `bpy` can reach is reachable; the one exclusion is the continuous brush *gesture* (sculpt strokes, manual weight-paint dragging), not sculpt itself — remesh, smooth, multires and procedural deformation all work by code.
+
+The rule that matters most is **verify visually at every step**: `execute_blender_code` → `render_viewport_to_path` → read the PNG → fix → repeat. Generated code compiles, returns `ok`, and looks fine in a textured render while bones point the wrong way or weights leak. The skill also encodes the gotchas that cost real time — the add-on's screenshot bug, the Blender 5.x action-slot API, FFMPEG removal, and main-thread freezes.
+
+### Installation
+
+Blender open with the "MCP" add-on running on port 9876, plus the official server (**not** the third-party `uvx blender-mcp`):
+
+```bash
+uv --directory ~/blender_mcp/mcp run blender-mcp
+```
+
+### Usage
+
+```bash
+/blender-mcp model a low-poly mech torso
+/blender-mcp rig this model and skin it rigidly
+/blender-mcp animate a loopable walk cycle
+/blender-mcp add IK controls to the legs
+/blender-mcp export FBX for Unity with NLA strips
+```
+
+### Files
+
+```
+blender-mcp/
+├── SKILL.md
+└── references/
+    ├── setup.md               # install, connection recovery, the 26 tools, API traps
+    ├── modeling.md            # blockout → remesh → procedural sculpt, materials, UV
+    ├── rigging.md             # armatures, visual joint verification, weight color-debug
+    ├── animation.md           # procedural cycles, world→bone math, NLA strips
+    └── rig-controls-export.md # IK, FK/IK blend, control shapes, FBX export
 ```
 
 ---
@@ -528,6 +613,38 @@ python3 "$SKILL/csv_tools.py" to-markdown data.csv -o table.md
 csv-tools/
 ├── SKILL.md
 └── csv_tools.py
+```
+
+---
+
+## data-oriented-cpp
+
+Patterns for C++ that touches **large arrays of similar things** and must stay fast, correct under threading, and maintainable for a decade. Every rule is drawn from a system that survived exactly that — Blender's `blenlib`, `functions`/`nodes`, `editors/transform`, `depsgraph` and `blenloader` — and `references/blender-map.md` gives the file paths to read the originals.
+
+Covers compressed index sets instead of index vectors, virtual arrays with call-site devirtualization, implicit sharing (copy-on-write plus a version counter), CSR offset grouping, lock-free parallel writes via ownership partition, lazy threading for unknown-size tasks, normalize-then-operate for N types × M operations, granular invalidate-and-flush dependency tracking, and self-describing serialization that survives schema change.
+
+It opens with a scope check, deliberately: these patterns buy throughput and long-term flexibility at the cost of indirection, and they are a net loss on small-N code, one-shot scripts, and business logic where clarity dominates. Apply when N routinely exceeds ~10k and the elements are homogeneous — otherwise write the plain loop and say so explicitly rather than reaching for machinery.
+
+### Usage
+
+```bash
+/data-oriented-cpp design a particle system that scales to 10M elements
+/data-oriented-cpp review this hot loop for cache locality
+/data-oriented-cpp parallelize this vertex update without a data race
+/data-oriented-cpp persist this with undo and a versioned file format
+```
+
+### Files
+
+```
+data-oriented-cpp/
+├── SKILL.md
+└── references/
+    ├── architecture.md   # normalize-then-operate, dependency tracking
+    ├── blender-map.md    # file paths to the originals in Blender's source
+    ├── collections.md    # index masks, virtual arrays, implicit sharing, CSR
+    ├── parallelism.md    # grain size, ownership partition, lazy threading
+    └── persistence.md    # self-describing serialization, schema evolution
 ```
 
 ---
@@ -2042,6 +2159,35 @@ rf-tools/
 
 ---
 
+## sentry
+
+Add and operate Sentry — errors, tracing, profiling, logs and session replay — across Python (FastAPI/Django/Flask/Celery/Lambda), JavaScript/TypeScript (browser, Node, Next.js, Svelte, WASM), Go, iOS/macOS, Android, and Unity/Unreal. One reference file per stack, plus an operations file covering releases, source maps, debug symbols, CI, alerts, quota and self-hosted.
+
+The golden rules it enforces are the ones that actually decide whether an install is useful: init before the app object or router is constructed, or auto-instrumentation patches nothing; DSN from an env var, auth tokens never in source or a client bundle; `environment` and `release` on every init, or regressions are undetectable and symbols won't match; no symbol upload means no value; PII decided deliberately, with scrubbing configured before `send_default_pii`; sample tracing, not errors — `traces_sample_rate: 1.0` in production is the #1 cause of a blown quota; and flush before exit in short-lived processes.
+
+### Usage
+
+```bash
+/sentry add Sentry to this FastAPI service
+/sentry my stack traces are minified
+/sentry upload dSYMs from CI
+/sentry tune traces_sample_rate — we're burning our quota
+
+# verify an install end-to-end (stdlib only, no SDK needed)
+python3 ~/.claude/skills/sentry/scripts/send_test_event.py
+```
+
+### Files
+
+```
+sentry/
+├── SKILL.md
+├── scripts/send_test_event.py
+└── references/{python, javascript, go, apple, android, games, operations}.md
+```
+
+---
+
 ## spice
 
 Run analog circuit simulations with ngspice in batch mode: AC/transient/DC sweeps and operating points from your netlists or bundled templates, results parsed to CSV with a stdlib ASCII plotter (log-x Bode rolloffs, transient shapes) — no GUI needed. Templates: RC lowpass, divider, series RLC, diode rectifier, MOSFET switch, ideal-op-amp inverting amp — each simulated and checked against theory (e.g. RC −3 dB measured at 159.14 Hz vs 159.15 Hz expected).
@@ -2202,6 +2348,45 @@ Pipelines: yt-dlp download → transcribe (videos without CC), and transcribe `-
 transcribe/
 ├── SKILL.md
 └── transcribe.py
+```
+
+---
+
+## unity
+
+Drive Unity from the terminal with the standalone `unity` CLI — no Unity Hub GUI required: install and switch Editor versions, create or open projects, run headless builds and EditMode/PlayMode tests, drive a *running* Editor through the Pipeline package, and expose that Editor to AI agents over MCP.
+
+Ground rule: **trust the binary, not the docs site.** Unity's published CLI reference lags the shipped build by several releases — as of `1.0.0-beta.3` it documents 11 of ~35 commands and omits `build`/`test`/`run`/`mcp`/`pipeline` entirely. Resolve uncertainty with `unity --help`, `unity <cmd> --help` and `unity changelog`. Two traps worth knowing up front: `unity build` **requires** `--execute-method` (Unity has no built-in command-line build, so the project must expose a static C# method that performs it), and `unity test` exits **6** when tests fail — distinct from a broken run, and worth branching on in CI.
+
+### Installation
+
+```bash
+curl -fsSL https://public-cdn.cloud.unity3d.com/hub/prod/cli/install.sh | UNITY_CLI_CHANNEL=beta bash
+unity auth login          # browser flow; shares the OS keyring with Unity Hub
+unity doctor              # environment snapshot when something looks wrong
+```
+
+### Usage
+
+```bash
+unity install lts -m android ios webgl --cm
+unity editors -i --json
+unity projects new ./MyGame --editor-version 6000.3.7f1
+
+unity build ./MyGame --target StandaloneLinux64 --execute-method Builder.PerformBuild -o ./out
+unity test ./MyGame --mode EditMode --output results.xml     # exit 6 == tests failed
+
+unity pipeline install && unity status && unity list          # drive a live Editor
+unity mcp configure claude-code --dry-run                     # wire the Editor to Claude Code
+```
+
+In CI, set `UNITY_SERVICE_ACCOUNT_ID` / `UNITY_SERVICE_ACCOUNT_SECRET` (bearer tokens are generated automatically — no `unity auth login` on agents) plus `UNITY_NON_INTERACTIVE=1` and `UNITY_FORMAT=json`. Android signing secrets passed as CLI args land in shell history and CI logs; source them from the secret store.
+
+### Files
+
+```
+unity/
+└── SKILL.md
 ```
 
 ---
