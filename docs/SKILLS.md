@@ -52,6 +52,7 @@ Complete table of every skill in this repository. Each skill name links to its d
 | [pdf-tools](../README.md#pdf-tools) | PDF manipulation | `pypdf` |
 | [pentest](../README.md#pentest) | Authorized defensive security testing — 41 vuln/recon playbooks + Shannon | Per-playbook CLI tools (curl, ffuf, nuclei…); Docker for Shannon |
 | [pg-client](../README.md#pg-client) | PostgreSQL client with graph & RLS support | `psycopg2` |
+| [planetary-dashboard](../README.md#planetary-dashboard) | Build 3D Cesium/MapLibre planetary dashboards: keyless starter, 50-source catalog + live probe, proxies, rendering, UI, AI agents, pipelines | None (starter: Node 20+, `npm install`) |
 | [release-notes](../README.md#release-notes) | Changelog / release notes from git history between refs | `gh` (fallback: github skill) |
 | [rf-tools](../README.md#rf-tools) | RF calculators: link budget, VSWR, Friis NF, matching, microstrip, attenuators | None |
 | [sentry](../README.md#sentry) | Sentry errors, tracing, profiling & replay across Python/JS/Go/mobile/games | `sentry-cli` / `sentry-wizard` per stack |

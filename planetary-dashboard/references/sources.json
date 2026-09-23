@@ -1,0 +1,780 @@
+{
+ "version": 1,
+ "notes": "Public feeds proven in God's Eye View (GEV), GeoSphere (GS) and KANZI (KZ). 'probe' is a cheap URL that should answer 2xx/3xx when the service is up. 'browser' = safe to call directly from the browser (CORS ok, no secret); otherwise go through a server proxy. Always re-check provider terms before shipping.",
+ "sources": [
+  {
+   "id": "esri-world-imagery",
+   "name": "Esri World Imagery",
+   "category": "basemap",
+   "auth": "none",
+   "browser": true,
+   "url": "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+   "probe": "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer?f=json",
+   "refresh": "static",
+   "limits": "attribution 'Powered by Esri' required",
+   "license": "Esri terms",
+   "used_in": [
+    "GEV",
+    "KZ"
+   ]
+  },
+  {
+   "id": "osm-tiles",
+   "name": "OpenStreetMap standard tiles",
+   "category": "basemap",
+   "auth": "none",
+   "browser": true,
+   "url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+   "probe": "https://tile.openstreetmap.org/0/0/0.png",
+   "refresh": "static",
+   "limits": "tile usage policy: low volume, valid User-Agent/Referer, no bulk prefetch",
+   "license": "ODbL",
+   "used_in": [
+    "GEV"
+   ]
+  },
+  {
+   "id": "carto-basemaps",
+   "name": "CARTO dark/light vector + label styles",
+   "category": "basemap",
+   "auth": "none",
+   "browser": true,
+   "url": "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+   "probe": "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+   "refresh": "static",
+   "limits": "unkeyed CARTO *raster* tiles return 200 with a baked watermark - use the GL styles, test for it",
+   "license": "CARTO terms + ODbL",
+   "used_in": [
+    "GS",
+    "KZ"
+   ]
+  },
+  {
+   "id": "protomaps-pmtiles",
+   "name": "Protomaps basemap (self-hosted PMTiles)",
+   "category": "basemap",
+   "auth": "none",
+   "browser": true,
+   "url": "https://docs.protomaps.com/basemaps/downloads",
+   "probe": "https://docs.protomaps.com/basemaps/downloads",
+   "refresh": "download builds",
+   "limits": "self-host for sovereign/offline deployments",
+   "license": "ODbL",
+   "used_in": []
+  },
+  {
+   "id": "reearth-terrain",
+   "name": "Re:Earth keyless quantized-mesh terrain",
+   "category": "terrain",
+   "auth": "none",
+   "browser": true,
+   "url": "https://terrain.reearth.land/cesium-mesh/ellipsoid",
+   "probe": "https://terrain.reearth.land/cesium-mesh/ellipsoid/layer.json",
+   "refresh": "static",
+   "limits": "community service; fall back to EllipsoidTerrainProvider",
+   "license": "see provider",
+   "used_in": [
+    "GEV"
+   ]
+  },
+  {
+   "id": "aws-terrarium",
+   "name": "AWS Terrain Tiles (terrarium PNG)",
+   "category": "terrain",
+   "auth": "none",
+   "browser": true,
+   "url": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+   "probe": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/0/0/0.png",
+   "refresh": "static",
+   "limits": "maxzoom 15; works for MapLibre raster-dem and a Cesium custom terrain provider",
+   "license": "mixed open (see Mapzen attribution)",
+   "used_in": [
+    "KZ"
+   ]
+  },
+  {
+   "id": "cesium-ion",
+   "name": "Cesium ion (World Terrain, OSM Buildings, Bing, Google 3D via asset 2275207)",
+   "category": "3d-tiles",
+   "auth": "key:CESIUM_ION_TOKEN",
+   "browser": true,
+   "url": "https://api.cesium.com/",
+   "probe": "https://api.cesium.com/",
+   "refresh": "static",
+   "limits": "free tier for personal/non-commercial; token is browser-exposed by design",
+   "license": "Cesium ion terms",
+   "used_in": [
+    "GEV",
+    "GS",
+    "KZ"
+   ]
+  },
+  {
+   "id": "google-photoreal-3d",
+   "name": "Google Photorealistic 3D Tiles",
+   "category": "3d-tiles",
+   "auth": "key:GOOGLE_MAPS_API_KEY",
+   "browser": true,
+   "url": "https://tile.googleapis.com/v1/3dtiles/root.json",
+   "probe": "https://tile.googleapis.com/v1/3dtiles/root.json",
+   "refresh": "static",
+   "limits": "metered; key is browser-exposed - restrict by HTTP referrer; show Google attribution",
+   "license": "Google Maps Platform terms",
+   "used_in": [
+    "GEV"
+   ]
+  },
+  {
+   "id": "opensky",
+   "name": "OpenSky Network state vectors",
+   "category": "aviation",
+   "auth": "optional:OPENSKY_CLIENT_ID+OPENSKY_CLIENT_SECRET",
+   "browser": false,
+   "url": "https://opensky-network.org/api/states/all?extended=1",
+   "probe": "https://opensky-network.org/api/states/all?lamin=45&lomin=5&lamax=46&lomax=6",
+   "refresh": "10-30 s",
+   "limits": "credit-based; read X-Rate-Limit-Remaining and adapt TTL (9/30/90/300 s); 429 -> cooldown from retry-after; bbox <= 25 deg^2 is cheaper",
+   "license": "non-commercial research terms",
+   "used_in": [
+    "GEV",
+    "GS",
+    "KZ"
+   ]
+  },
+  {
+   "id": "adsb-lol",
+   "name": "adsb.lol (regional + military feeds)",
+   "category": "aviation",
+   "auth": "none",
+   "browser": false,
+   "url": "https://api.adsb.lol/v2/lat/{lat}/lon/{lon}/dist/250",
+   "probe": "https://api.adsb.lol/v2/mil",
+   "refresh": "12-15 s",
+   "limits": "honour Retry-After; cache 12 s; use as OpenSky fallback and /v2/mil for military",
+   "license": "ODbL",
+   "used_in": [
+    "GEV"
+   ]
+  },
+  {
+   "id": "adsbdb",
+   "name": "adsbdb route + airframe enrichment",
+   "category": "aviation",
+   "auth": "none",
+   "browser": false,
+   "url": "https://api.adsbdb.com/v0/callsign/{callsign}",
+   "probe": "https://api.adsbdb.com/v0/aircraft/a0b1c2",
+   "refresh": "cache 24 h incl. 404s",
+   "limits": "throttle client fan-out (4 in flight, token bucket)",
+   "license": "see provider",
+   "used_in": [
+    "GEV"
+   ]
+  },
+  {
+   "id": "ourairports",
+   "name": "OurAirports CSV",
+   "category": "aviation",
+   "auth": "none",
+   "browser": false,
+   "url": "https://davidmegginson.github.io/ourairports-data/airports.csv",
+   "probe": "https://davidmegginson.github.io/ourairports-data/airports.csv",
+   "refresh": "daily",
+   "limits": "~12 MB - parse server-side, cache 24 h",
+   "license": "public domain",
+   "used_in": [
+    "GS"
+   ]
+  },
+  {
+   "id": "aisstream",
+   "name": "AISStream websocket",
+   "category": "maritime",
+   "auth": "key:AISSTREAM_API_KEY",
+   "browser": false,
+   "url": "wss://stream.aisstream.io/v0/stream",
+   "probe": "https://aisstream.io/",
+   "refresh": "push",
+   "limits": "hold ONE server socket; watchdog on silence (120 s), backoff 5/15/60/300 s; key must never reach the browser",
+   "license": "AISStream terms",
+   "used_in": [
+    "GEV",
+    "GS",
+    "KZ"
+   ]
+  },
+  {
+   "id": "celestrak",
+   "name": "CelesTrak GP elements (TLE)",
+   "category": "space",
+   "auth": "none",
+   "browser": false,
+   "url": "https://celestrak.org/NORAD/elements/gp.php?GROUP={group}&FORMAT=tle",
+   "probe": "https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=tle",
+   "refresh": "cache 2-6 h",
+   "limits": "CelesTrak blocks clients that re-download too often; cache on disk; propagate with satellite.js SGP4 in the browser",
+   "license": "free",
+   "used_in": [
+    "GEV",
+    "GS",
+    "KZ"
+   ]
+  },
+  {
+   "id": "launch-library-2",
+   "name": "Launch Library 2 (The Space Devs)",
+   "category": "space",
+   "auth": "optional:LL2_API_TOKEN",
+   "browser": false,
+   "url": "https://ll.thespacedevs.com/2.3.0/launches/",
+   "probe": "https://ll.thespacedevs.com/2.3.0/launches/?limit=1",
+   "refresh": "15 min",
+   "limits": "anonymous ~15 req/h - cache hard",
+   "license": "see provider",
+   "used_in": [
+    "GEV"
+   ]
+  },
+  {
+   "id": "usgs-earthquakes",
+   "name": "USGS earthquake GeoJSON feeds",
+   "category": "hazards",
+   "auth": "none",
+   "browser": true,
+   "url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson",
+   "probe": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_month.geojson",
+   "refresh": "60 s",
+   "limits": "prefer the pre-filtered 2.5_* feeds over all_*",
+   "license": "public domain",
+   "used_in": [
+    "GEV",
+    "GS"
+   ]
+  },
+  {
+   "id": "gdacs",
+   "name": "GDACS global disaster alerts",
+   "category": "hazards",
+   "auth": "none",
+   "browser": false,
+   "url": "https://www.gdacs.org/gdacsapi/api/events/geteventlist/EVENTS4APP",
+   "probe": "https://www.gdacs.org/gdacsapi/api/events/geteventlist/EVENTS4APP",
+   "refresh": "5 min",
+   "limits": "geteventlist/MAP returned HTTP 400 on 2026-09-23 (even with fromDate/toDate); EVENTS4APP and SEARCH?eventlist=EQ;TC;FL answer 200",
+   "license": "GDACS terms",
+   "used_in": [
+    "GS"
+   ]
+  },
+  {
+   "id": "smithsonian-gvp",
+   "name": "Smithsonian GVP volcanoes (WFS)",
+   "category": "hazards",
+   "auth": "none",
+   "browser": false,
+   "url": "https://webservices.volcano.si.edu/geoserver/GVP-VOTW/ows?service=WFS&version=2.0.0&request=GetFeature&typeNames=GVP-VOTW:Smithsonian_VOTW_Holocene_Volcanoes&outputFormat=application/json&srsName=EPSG:4326",
+   "probe": "https://webservices.volcano.si.edu/geoserver/GVP-VOTW/ows?service=WFS&version=2.0.0&request=GetCapabilities",
+   "refresh": "daily",
+   "limits": "host resets connections from some networks - keep a bundled snapshot fallback",
+   "license": "cite GVP",
+   "used_in": [
+    "GS"
+   ]
+  },
+  {
+   "id": "nhc-storms",
+   "name": "NOAA NHC current storms + GIS",
+   "category": "weather",
+   "auth": "none",
+   "browser": false,
+   "url": "https://www.nhc.noaa.gov/CurrentStorms.json",
+   "probe": "https://www.nhc.noaa.gov/CurrentStorms.json",
+   "refresh": "5 min",
+   "limits": "attach track/cone only when advisory numbers match; validate per storm, not all-or-nothing",
+   "license": "public domain",
+   "used_in": [
+    "GEV",
+    "GS"
+   ]
+  },
+  {
+   "id": "nowcoast-wms",
+   "name": "NOAA nowCOAST radar/clouds/lightning (WMS)",
+   "category": "weather",
+   "auth": "none",
+   "browser": false,
+   "url": "https://nowcoast.noaa.gov/geoserver/{service}/ows (service: weather_radar | satellite | lightning_detection)",
+   "probe": "https://nowcoast.noaa.gov/geoserver/weather_radar/ows?service=WMS&version=1.3.0&request=GetCapabilities",
+   "refresh": "2-10 min",
+   "limits": "whitelist params; reject XML DOCTYPE/entities in capabilities; CONUS radar only",
+   "license": "public domain",
+   "used_in": [
+    "GEV"
+   ]
+  },
+  {
+   "id": "rainviewer",
+   "name": "RainViewer global radar frames",
+   "category": "weather",
+   "auth": "none",
+   "browser": true,
+   "url": "https://api.rainviewer.com/public/weather-maps.json",
+   "probe": "https://api.rainviewer.com/public/weather-maps.json",
+   "refresh": "5 min; animate frames at ~600 ms",
+   "limits": "512 px tiles, maxLevel 7",
+   "license": "RainViewer terms",
+   "used_in": [
+    "GS"
+   ]
+  },
+  {
+   "id": "open-meteo",
+   "name": "Open-Meteo forecast / marine / air quality",
+   "category": "weather",
+   "auth": "none",
+   "browser": false,
+   "url": "https://api.open-meteo.com/v1/forecast",
+   "probe": "https://api.open-meteo.com/v1/forecast?latitude=0&longitude=0&current=temperature_2m",
+   "refresh": "5-15 min",
+   "limits": "10k calls/day non-commercial; batch grid points (<= ~80 per URL, 8 KB URL cap); 429 -> 60 s backoff",
+   "license": "CC BY 4.0",
+   "used_in": [
+    "GEV",
+    "GS",
+    "KZ"
+   ]
+  },
+  {
+   "id": "noaa-gfs",
+   "name": "NOAA GFS 0.25 GRIB2 on AWS",
+   "category": "weather",
+   "auth": "none",
+   "browser": false,
+   "url": "https://noaa-gfs-bdp-pds.s3.amazonaws.com/",
+   "probe": "https://noaa-gfs-bdp-pds.s3.amazonaws.com/?list-type=2&max-keys=1",
+   "refresh": "hourly; cycles lag ~5 h",
+   "limits": "use .idx byte ranges; decode server-side (eccodes-wasm / cfgrib); fall back to previous cycle",
+   "license": "public domain",
+   "used_in": [
+    "GEV"
+   ]
+  },
+  {
+   "id": "ecmwf-open-data",
+   "name": "ECMWF IFS open data",
+   "category": "weather",
+   "auth": "none",
+   "browser": false,
+   "url": "https://data.ecmwf.int/forecasts/",
+   "probe": "https://data.ecmwf.int/forecasts/",
+   "refresh": "cycles lag ~6 h",
+   "limits": "byte-range via .index JSON lines",
+   "license": "CC BY 4.0",
+   "used_in": [
+    "GEV"
+   ]
+  },
+  {
+   "id": "noaa-swpc-aurora",
+   "name": "NOAA SWPC OVATION aurora + Kp",
+   "category": "weather",
+   "auth": "none",
+   "browser": true,
+   "url": "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json",
+   "probe": "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json",
+   "refresh": "5 min",
+   "limits": "render as a canvas imagery layer, not thousands of rectangles",
+   "license": "public domain",
+   "used_in": [
+    "GS"
+   ]
+  },
+  {
+   "id": "noaa-coops",
+   "name": "NOAA CO-OPS tide gauges",
+   "category": "weather",
+   "auth": "none",
+   "browser": false,
+   "url": "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.json",
+   "probe": "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.json?type=waterlevels",
+   "refresh": "daily",
+   "limits": "",
+   "license": "public domain",
+   "used_in": [
+    "GS"
+   ]
+  },
+  {
+   "id": "nasa-firms",
+   "name": "NASA FIRMS active fires (VIIRS/MODIS CSV)",
+   "category": "fires",
+   "auth": "key:FIRMS_MAP_KEY",
+   "browser": false,
+   "url": "https://firms.modaps.eosdis.nasa.gov/api/area/csv/{KEY}/VIIRS_NOAA20_NRT/world/1",
+   "probe": "https://firms.modaps.eosdis.nasa.gov/api/",
+   "refresh": "10-30 min",
+   "limits": "5000 transactions/10 min per key; never log the key (it is in the URL path); LOD: heat cells from orbit, sprites close in",
+   "license": "NASA open data",
+   "used_in": [
+    "GEV",
+    "GS"
+   ]
+  },
+  {
+   "id": "nasa-gibs",
+   "name": "NASA GIBS WMTS (MODIS/VIIRS/GOES/Himawari/HLS)",
+   "category": "imagery",
+   "auth": "none",
+   "browser": true,
+   "url": "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/",
+   "probe": "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief/default/GoogleMapsCompatible_Level8/0/0/0.jpeg",
+   "refresh": "daily; geostationary every 10 min",
+   "limits": "cap maximumLevel per product; the full WMTSCapabilities.xml is large and slow - do not fetch it at runtime",
+   "license": "NASA open data",
+   "used_in": [
+    "GEV",
+    "GS"
+   ]
+  },
+  {
+   "id": "nasa-cmr",
+   "name": "NASA CMR granule search (HLS etc.)",
+   "category": "imagery",
+   "auth": "none",
+   "browser": true,
+   "url": "https://cmr.earthdata.nasa.gov/search/granules.umm_json",
+   "probe": "https://cmr.earthdata.nasa.gov/search/collections.json?page_size=1",
+   "refresh": "per query",
+   "limits": "page with CMR-Search-After (200/page); cap records",
+   "license": "NASA open data",
+   "used_in": [
+    "GEV"
+   ]
+  },
+  {
+   "id": "earth-search-stac",
+   "name": "Element84 Earth Search STAC (Sentinel-2, Landsat COGs)",
+   "category": "stac",
+   "auth": "none",
+   "browser": true,
+   "url": "https://earth-search.aws.element84.com/v1",
+   "probe": "https://earth-search.aws.element84.com/v1/collections",
+   "refresh": "per query",
+   "limits": "COGs readable with AWS_NO_SIGN_REQUEST",
+   "license": "Copernicus / USGS open",
+   "used_in": [
+    "GS",
+    "KZ"
+   ]
+  },
+  {
+   "id": "planetary-computer",
+   "name": "Microsoft Planetary Computer STAC",
+   "category": "stac",
+   "auth": "none",
+   "browser": false,
+   "url": "https://planetarycomputer.microsoft.com/api/stac/v1",
+   "probe": "https://planetarycomputer.microsoft.com/api/stac/v1/collections",
+   "refresh": "per query",
+   "limits": "assets need URL signing (planetary-computer SAS)",
+   "license": "per collection",
+   "used_in": [
+    "GS"
+   ]
+  },
+  {
+   "id": "copernicus-cdse",
+   "name": "Copernicus Data Space STAC + eodata S3",
+   "category": "stac",
+   "auth": "key:CDSE_CLIENT_ID+CDSE_CLIENT_SECRET",
+   "browser": false,
+   "url": "https://stac.dataspace.copernicus.eu/v1",
+   "probe": "https://stac.dataspace.copernicus.eu/v1/collections",
+   "refresh": "per query",
+   "limits": "OAuth client credentials + separate S3 keys for eodata",
+   "license": "Copernicus open",
+   "used_in": [
+    "GS"
+   ]
+  },
+  {
+   "id": "overpass",
+   "name": "OSM Overpass API (mirrors)",
+   "category": "infrastructure",
+   "auth": "none",
+   "browser": false,
+   "url": "https://overpass-api.de/api/interpreter",
+   "probe": "https://overpass-api.de/api/status",
+   "refresh": "per query; cache 24 h+",
+   "limits": "rotate mirrors (overpass-api.de, overpass.kumi.systems, lz4.overpass-api.de, overpass.private.coffee); snap bboxes to a grid for cache hits; cap bbox and timeout; 1 query/2 s",
+   "license": "ODbL",
+   "used_in": [
+    "GEV",
+    "GS",
+    "KZ"
+   ]
+  },
+  {
+   "id": "telegeography-cables",
+   "name": "TeleGeography submarine cables GeoJSON",
+   "category": "infrastructure",
+   "auth": "none",
+   "browser": false,
+   "url": "https://www.submarinecablemap.com/api/v3/cable/cable-geo.json",
+   "probe": "https://www.submarinecablemap.com/api/v3/cable/cable-geo.json",
+   "refresh": "daily / bundle",
+   "limits": "bundle a snapshot",
+   "license": "CC BY-NC-SA 3.0 (non-commercial)",
+   "used_in": [
+    "GEV",
+    "GS"
+   ]
+  },
+  {
+   "id": "wri-power-plants",
+   "name": "WRI Global Power Plant Database",
+   "category": "infrastructure",
+   "auth": "none",
+   "browser": false,
+   "url": "https://wri-dataportal-prod.s3.amazonaws.com/manual/global_power_plant_database_v_1_3.zip",
+   "probe": "https://datasets.wri.org/",
+   "refresh": "static",
+   "limits": "parse server-side once, keep in memory",
+   "license": "CC BY 4.0",
+   "used_in": [
+    "GS"
+   ]
+  },
+  {
+   "id": "opencellid",
+   "name": "OpenCellID cell sites",
+   "category": "infrastructure",
+   "auth": "key:OPENCELLID_API_KEY",
+   "browser": false,
+   "url": "https://opencellid.org/cell/getInArea",
+   "probe": "https://opencellid.org/",
+   "refresh": "per query",
+   "limits": "tiny area cap per request",
+   "license": "CC BY-SA 4.0",
+   "used_in": [
+    "GS"
+   ]
+  },
+  {
+   "id": "gtfs-rt-mbta",
+   "name": "GTFS-realtime vehicle positions (e.g. MBTA)",
+   "category": "transit",
+   "auth": "none",
+   "browser": false,
+   "url": "https://cdn.mbta.com/realtime/VehiclePositions.pb",
+   "probe": "https://cdn.mbta.com/realtime/VehiclePositions.pb",
+   "refresh": "15 s",
+   "limits": "browser sends feed IDs only; proxy keeps the registry; refuse differential feeds",
+   "license": "per agency",
+   "used_in": [
+    "GEV"
+   ]
+  },
+  {
+   "id": "gbfs",
+   "name": "GBFS bike share (per-system station feeds)",
+   "category": "transit",
+   "auth": "none",
+   "browser": false,
+   "url": "https://gbfs.citibikenyc.com/gbfs/gbfs.json",
+   "probe": "https://gbfs.citibikenyc.com/gbfs/gbfs.json",
+   "refresh": "60 s status",
+   "limits": "allowlist hosts + paths; refuse redirects",
+   "license": "per operator",
+   "used_in": [
+    "GEV"
+   ]
+  },
+  {
+   "id": "tomtom-flow",
+   "name": "TomTom traffic flow vector tiles",
+   "category": "transit",
+   "auth": "key:TOMTOM_API_KEY",
+   "browser": false,
+   "url": "https://api.tomtom.com/traffic/map/4/tile/flow/relative/{z}/{x}/{y}.pbf",
+   "probe": "https://api.tomtom.com/",
+   "refresh": "120 s",
+   "limits": "enforce a persisted daily tile budget server-side; keyless = simulate along OSM roads",
+   "license": "TomTom terms",
+   "used_in": [
+    "GEV"
+   ]
+  },
+  {
+   "id": "windy-webcams",
+   "name": "Windy Webcams v3",
+   "category": "cameras",
+   "auth": "key:WINDY_WEBCAMS_API_KEY",
+   "browser": false,
+   "url": "https://api.windy.com/webcams/api/v3/webcams",
+   "probe": "https://api.windy.com/",
+   "refresh": "viewport-bound",
+   "limits": "",
+   "license": "Windy terms",
+   "used_in": [
+    "GS"
+   ]
+  },
+  {
+   "id": "dot-traffic-cams",
+   "name": "Public DOT traffic cameras (Caltrans, TfL JamCam, DriveBC, 511, Digitraffic...)",
+   "category": "cameras",
+   "auth": "mostly none",
+   "browser": false,
+   "url": "https://api.tfl.gov.uk/Place/Type/JamCam",
+   "probe": "https://api.tfl.gov.uk/Place/Type/JamCam",
+   "refresh": "catalog 15 min; stills 3-10 min",
+   "limits": "registry-only frame proxy, never client URLs; public-intended cameras only (no Shodan/Insecam)",
+   "license": "per agency",
+   "used_in": [
+    "GEV",
+    "GS"
+   ]
+  },
+  {
+   "id": "radio-browser",
+   "name": "Radio Browser directory",
+   "category": "radio",
+   "auth": "none",
+   "browser": false,
+   "url": "https://all.api.radio-browser.info/json/servers",
+   "probe": "https://all.api.radio-browser.info/json/servers",
+   "refresh": "45 min",
+   "limits": "discover mirrors, refuse private DNS answers; audio plays direct from broadcaster (disclose IP exposure)",
+   "license": "public domain",
+   "used_in": [
+    "GEV",
+    "KZ"
+   ]
+  },
+  {
+   "id": "nominatim",
+   "name": "OSM Nominatim geocoder",
+   "category": "geocoding",
+   "auth": "none",
+   "browser": false,
+   "url": "https://nominatim.openstreetmap.org/search",
+   "probe": "https://nominatim.openstreetmap.org/status",
+   "refresh": "per query; cache 5 min",
+   "limits": "HARD 1 req/s, identifying User-Agent, no autocomplete - serialize through a proxy queue",
+   "license": "ODbL",
+   "used_in": [
+    "GEV",
+    "GS",
+    "KZ"
+   ]
+  },
+  {
+   "id": "photon",
+   "name": "Photon (komoot) geocoder",
+   "category": "geocoding",
+   "auth": "none",
+   "browser": true,
+   "url": "https://photon.komoot.io/api/",
+   "probe": "https://photon.komoot.io/api/?q=berlin&limit=1",
+   "refresh": "per query",
+   "limits": "fair use; bias with lat/lon",
+   "license": "ODbL",
+   "used_in": [
+    "GEV"
+   ]
+  },
+  {
+   "id": "osrm-fossgis",
+   "name": "OSRM routing (routing.openstreetmap.de)",
+   "category": "routing",
+   "auth": "none",
+   "browser": false,
+   "url": "https://routing.openstreetmap.de/routed-car/route/v1/driving/",
+   "probe": "https://routing.openstreetmap.de/",
+   "refresh": "per query; cache 10 min",
+   "limits": "1 req/s, cap waypoints and leg length",
+   "license": "ODbL",
+   "used_in": [
+    "GEV",
+    "KZ"
+   ]
+  },
+  {
+   "id": "wikipedia",
+   "name": "Wikipedia REST summary + search",
+   "category": "context",
+   "auth": "none",
+   "browser": false,
+   "url": "https://en.wikipedia.org/api/rest_v1/page/summary/{title}",
+   "probe": "https://en.wikipedia.org/api/rest_v1/page/summary/Earth",
+   "refresh": "cache 7 d",
+   "limits": "descriptive User-Agent required",
+   "license": "CC BY-SA",
+   "used_in": [
+    "GS"
+   ]
+  },
+  {
+   "id": "gdelt",
+   "name": "GDELT DOC 2.0 news",
+   "category": "context",
+   "auth": "none",
+   "browser": false,
+   "url": "https://api.gdeltproject.org/api/v2/doc/doc",
+   "probe": "https://api.gdeltproject.org/api/v2/doc/doc?query=earthquake&mode=artlist&maxrecords=1&format=json",
+   "refresh": "cache 1 h",
+   "limits": "fallback for Google News RSS",
+   "license": "GDELT terms",
+   "used_in": [
+    "GEV"
+   ]
+  },
+  {
+   "id": "nasa-power",
+   "name": "NASA POWER daily climate",
+   "category": "context",
+   "auth": "none",
+   "browser": false,
+   "url": "https://power.larc.nasa.gov/api/temporal/daily/point",
+   "probe": "https://power.larc.nasa.gov/",
+   "refresh": "cache 30 d (history is immutable)",
+   "limits": "",
+   "license": "NASA open data",
+   "used_in": [
+    "GS"
+   ]
+  },
+  {
+   "id": "natural-earth",
+   "name": "Natural Earth boundaries/regions",
+   "category": "context",
+   "auth": "none",
+   "browser": false,
+   "url": "https://www.naturalearthdata.com/downloads/",
+   "probe": "https://www.naturalearthdata.com/",
+   "refresh": "bundle",
+   "limits": "bundle for offline region lookup",
+   "license": "public domain",
+   "used_in": [
+    "GEV"
+   ]
+  },
+  {
+   "id": "openai-realtime",
+   "name": "OpenAI Realtime (voice agent)",
+   "category": "ai",
+   "auth": "key:OPENAI_API_KEY",
+   "browser": false,
+   "url": "https://api.openai.com/v1/realtime/client_secrets",
+   "probe": "https://status.openai.com/",
+   "refresh": "per session",
+   "limits": "mint short-lived client secrets server-side; WebRTC from browser; meter usage and cap cost",
+   "license": "OpenAI terms",
+   "used_in": [
+    "GEV",
+    "KZ"
+   ]
+  }
+ ]
+}

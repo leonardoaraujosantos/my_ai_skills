@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>__APP_NAME__</title>
+    <!-- Must run before any Cesium chunk: assets are copied to public/cesium by scripts/copy-cesium.mjs -->
+    <script>window.CESIUM_BASE_URL = '/cesium/';</script>
+    <link rel="stylesheet" href="/cesium/Widgets/widgets.css" />
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div id="globe"></div>
+
+    <header class="title">
+      <span class="kicker">PLANETARY DASHBOARD</span>
+      <h1>__APP_NAME__</h1>
+    </header>
+
+    <nav class="actions" aria-label="Globe actions">
+      <button id="btn-share" type="button">Share</button>
+      <button id="btn-tilt" type="button" aria-pressed="false">Tilt</button>
+      <button id="btn-north" type="button">North up</button>
+      <button id="btn-globe" type="button">Reset globe</button>
+    </nav>
+
+    <aside class="panel layers" aria-label="Data layers">
+      <h2>DATA LAYERS</h2>
+      <ul id="layer-list"></ul>
+    </aside>
+
+    <aside class="panel styles" aria-label="Visual style">
+      <h2>SENSOR</h2>
+      <div id="style-chips" role="group"></div>
+    </aside>
+
+    <section id="card" class="panel card" hidden aria-live="polite"></section>
+    <div id="hud" class="hud" aria-hidden="true"></div>
+    <div id="toast" class="toast" role="status" hidden></div>
+    <div id="credits" class="credits"></div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
