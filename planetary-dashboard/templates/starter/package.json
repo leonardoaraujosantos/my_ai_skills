@@ -1,0 +1,21 @@
+{
+  "name": "__APP_SLUG__",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "predev": "node scripts/copy-cesium.mjs",
+    "prebuild": "node scripts/copy-cesium.mjs",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test src/core/core.test.mjs"
+  },
+  "dependencies": {
+    "cesium": "^1.124.0",
+    "satellite.js": "^6.0.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}

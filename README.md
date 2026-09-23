@@ -81,6 +81,8 @@ mindmap
     3D and Game Development
       blender-mcp
       unity
+    Geospatial
+      planetary-dashboard
 ```
 
 The full table — every skill with its description and dependencies — lives in **[docs/SKILLS.md](docs/SKILLS.md)**. Detailed usage for each skill is in the sections below.
@@ -2105,6 +2107,62 @@ pg-client/
 ├── profiles.json
 └── scripts/
     └── pg_client.py
+```
+
+---
+
+## planetary-dashboard
+
+Build 3D web geospatial / planetary dashboards — a CesiumJS globe and/or MapLibre 3D terrain fusing live public feeds, analysis and AI — using patterns distilled from three shipped systems: **God's Eye View** (live aircraft/ships/satellites/quakes/fires/weather/cameras on a photoreal globe, sensor shaders, cockpit, realtime voice agent, scene director), **GeoSphere** (SvelteKit MVVM + FastAPI hexagonal backend: STAC spectral indices, RF coverage, SSE analysis, chat agent + MCP) and **KANZI** (MapLibre digital twin with real-sun terrain and underground WebGL, GDAL pipeline with provenance and snapshots, brandkits, sovereign deploy).
+
+![planetary-dashboard starter](planetary-dashboard/assets/starter-keyless.jpg)
+
+### Usage
+
+```bash
+PD=~/.claude/skills/planetary-dashboard/planetary_dashboard.py
+
+# Keyless Vite + Cesium starter: globe, live flights/satellites/quakes, feed-state panel,
+# sensor shaders, share links, render governor, cached /api proxies
+python3 "$PD" scaffold ./my-globe --name "Atlas"
+cd my-globe && npm install && npm run dev     # http://localhost:4173 — zero keys needed
+
+# Curated catalog of 50 public sources (auth, browser vs proxy, refresh, limits, licence)
+python3 "$PD" sources --keyless
+python3 "$PD" sources --category aviation --json
+
+# Which feeds answer right now (UP / GATED / THROTTLED / DOWN) — run before a demo
+python3 "$PD" probe --keyless
+python3 "$PD" probe --id opensky --id celestrak
+```
+
+Or just ask: "build a planetary dashboard for wildfire monitoring", "add a live AIS layer", "make it look like a spy-satellite console", "add a voice agent to the globe", "make the map work offline".
+
+### Reference files
+
+| File | Covers |
+|------|--------|
+| `references/architecture.md` | Cesium vs MapLibre, phased / MVVM / manifest-driven skeletons, the layer contract, feed-state vocabulary, build gotchas |
+| `references/proxies.md` | `/api/*` contract, cache TTL table, rate limits, fallback chains, WebSocket feeds, SSRF and key hygiene |
+| `references/sources.json` | 50 public data sources used by the CLI |
+| `references/rendering.md` | Primitives and LOD, dead-reckoned motion, tracking, sensor shaders, detection overlay, weather fields; MapLibre terrain, extrusions, custom WebGL |
+| `references/ui-design.md` | Tokens, layout, layer panel, cockpit HUD, first-run, accessibility, charts, brandkits |
+| `references/features.md` | Tiered feature catalog (core → situational → analysis → wow) with constants and pitfalls |
+| `references/ai-agents.md` | Realtime voice agent, globe tool catalog, analyst engine with feed provenance, SSE chat agent, annotations |
+| `references/backend-patterns.md` | Hexagonal FastAPI, HTTP + MCP + agent front doors, jobs, SSE from threads, PNG+bbox rasters, STAC, RF, RLS |
+| `references/pipelines-and-deploy.md` | Source registry with backups + snapshots, GDAL, manifests, context packs, sovereign/offline deploy |
+| `references/quality.md` | Test layers, config pins, offline e2e, screenshot harness, pre-ship checklist |
+
+### Files
+
+```
+planetary-dashboard/
+├── SKILL.md
+├── planetary_dashboard.py      # scaffold / sources / probe (stdlib only)
+├── assets/                     # starter screenshots
+├── references/                 # 9 guides + sources.json
+├── templates/starter/          # Vite + Cesium keyless starter (npm install to run)
+└── tests/
 ```
 
 ---
