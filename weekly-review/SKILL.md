@@ -1,7 +1,7 @@
 ---
 name: weekly-review
 description: Aggregate the week's activity (journal entries, calendar meetings, tasks, git commits, Obsidian notes) and synthesize a weekly review note saved to the Obsidian vault. Use when the user says "weekly review", "review my week", "what did I do this week", or "prepare my week".
-argument-hint: "[week: current|last|YYYY-Www] [--no-save]"
+argument-hint: [week: current|last|YYYY-Www] [--no-save]
 ---
 
 # Weekly Review

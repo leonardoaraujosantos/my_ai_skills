@@ -1,7 +1,7 @@
 ---
 name: code-review
 description: Review changed code for architecture compliance, security vulnerabilities, test coverage, and code quality. Enforces Hexagonal Architecture for backend and MVVM for frontend. Detects test gaps and runs tests when possible. Use when reviewing a PR, branch diff, or staged changes.
-argument-hint: "[PR_URL_OR_BRANCH] [--backend] [--frontend] [--security-only] [--tests-only]"
+argument-hint: [PR_URL_OR_BRANCH] [--backend] [--frontend] [--security-only] [--tests-only]
 allowed-tools: Bash(git diff:*), Bash(git log:*), Bash(gh pr view:*), Bash(gh pr diff:*), Bash(gh api:*), Bash(npm test:*), Bash(npm run test:*), Bash(npx jest:*), Bash(npx vitest:*), Bash(pytest:*), Bash(python -m pytest:*), Bash(go test:*), Bash(cargo test:*), Bash(mvn test:*), Bash(gradle test:*), Bash(./gradlew test:*), Bash(dotnet test:*), Bash(mix test:*), Bash(bundle exec rspec:*), Bash(make test:*), Read, Glob, Grep
 ---
 

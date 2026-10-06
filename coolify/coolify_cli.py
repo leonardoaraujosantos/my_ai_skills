@@ -20,9 +20,13 @@ Commands:
                                   Create or update an env var
     app-env-delete <uuid> <env_uuid>
                                   Delete an env var
-    deploy <uuid> [--force]       Trigger deployment
-    deployments <uuid> [--limit N]
-                                  List recent deployments
+    deploy <uuid> [--force]       Trigger deployment (prints the deployment_uuid to poll)
+    deployments [<uuid>] [--limit N]
+                                  List IN-PROGRESS deployments, optionally for one app.
+                                  Coolify exposes no history endpoint — an empty list means
+                                  nothing is deploying, not that nothing ever has.
+    deployment <deployment_uuid>  Show one deployment: status is in_progress | finished |
+                                  failed | cancelled-by-user
     logs <uuid> [--lines N]       Show application logs
     services                      List all services
     service <uuid>                Show service details
@@ -65,7 +69,17 @@ def get_config():
     return url, token
 
 
-def api(method, path, data=None):
+class ApiStatus(Exception):
+    """An HTTP status the caller asked to handle itself (see ``api(passthrough=...)``)."""
+
+    def __init__(self, code):
+        super().__init__(f"HTTP {code}")
+        self.code = code
+
+
+def api(method, path, data=None, *, passthrough=()):
+    """Call the Coolify API. HTTP errors exit, unless their status is in ``passthrough``,
+    in which case ``ApiStatus`` is raised for the caller to handle."""
     url, token = get_config()
     full_url = f"{url}/api/v1{path}"
     headers = {
@@ -80,6 +94,8 @@ def api(method, path, data=None):
             raw = resp.read().decode()
             return json.loads(raw) if raw.strip() else {}
     except HTTPError as e:
+        if e.code in passthrough:
+            raise ApiStatus(e.code) from e
         body = e.read().decode()
         try:
             err = json.loads(body)
@@ -148,27 +164,74 @@ def cmd_app_env_delete(uuid, env_uuid):
 
 
 def cmd_deploy(uuid, force=False):
-    params = "?force=true" if force else ""
-    result = api("POST", f"/applications/{uuid}/deploy{params}")
+    """Queue a deployment via /deploy?uuid=...&force=....
+
+    Newer Coolify only accepts POST here (GET answers 405 "This endpoint has changed to a POST
+    request", seen on a current Coolify, 2026-10-06). Older releases (4.0.0-beta.469) only
+    accept GET. So: POST first, and fall back to GET only on a 405 — a 405 means nothing was
+    queued, so the retry can't double-deploy. There is no POST /applications/{uuid}/deploy (404).
+
+    On old servers the GET mutates: merely *fetching* this URL starts a deploy, so never probe it.
+    """
+    path = f"/deploy?uuid={uuid}&force={'true' if force else 'false'}"
+    try:
+        result = api("POST", path, passthrough=(405,))
+    except ApiStatus:
+        result = api("GET", path)
+    # Response is {"deployments":[{message, resource_uuid, deployment_uuid}]}. Surface the
+    # deployment_uuid plainly — it is what `deployment <uuid>` needs to poll status.
+    for d in (result.get("deployments") or []) if isinstance(result, dict) else []:
+        print(f"queued: deployment_uuid={d.get('deployment_uuid')} resource={d.get('resource_uuid')}")
     pp(result)
 
 
-def cmd_deployments(uuid, limit=5):
-    result = api("GET", f"/applications/{uuid}/deployments")
+def cmd_deployments(uuid=None, limit=5):
+    """List deployments that are queued or running, optionally for one application.
+
+    Coolify has no per-application deployment *history* endpoint — /applications/{uuid}/deployments
+    is a 404. GET /deployments returns only what is in flight, so an empty list means "nothing
+    deploying right now", not "this app has never deployed".
+
+    ``uuid`` is an application uuid; /deployments keys on the numeric application_id, so it is
+    resolved via /applications/{uuid} first.
+    """
+    app_id = None
+    if uuid:
+        app = api("GET", f"/applications/{uuid}")
+        app_id = app.get("id") if isinstance(app, dict) else None
+
+    result = api("GET", "/deployments")
     items = result.get("data", result) if isinstance(result, dict) else result
-    if isinstance(items, list):
-        items = items[:limit]
-    rows = []
-    for d in items:
-        if isinstance(d, dict):
-            rows.append({
-                "status": d.get("status"),
-                "commit": str(d.get("commit", ""))[:8],
-                "message": str(d.get("commit_message", ""))[:60],
-                "created": d.get("created_at"),
-                "finished": d.get("finished_at"),
-            })
+    if not isinstance(items, list):
+        items = []
+    if app_id is not None:
+        items = [d for d in items if d.get("application_id") == app_id]
+
+    rows = [
+        {
+            "deployment_uuid": d.get("deployment_uuid"),
+            "application": d.get("application_name"),
+            "status": d.get("status"),
+            "commit": str(d.get("commit") or "")[:8],
+            "message": str(d.get("commit_message") or "")[:60],
+            "created": d.get("created_at"),
+            "finished": d.get("finished_at"),
+        }
+        for d in items[:limit]
+        if isinstance(d, dict)
+    ]
+    if not rows:
+        scope = f" for application {uuid}" if uuid else ""
+        print(f"No deployment in progress{scope}. (This endpoint does not return history.)")
     pp(rows)
+
+
+def cmd_deployment(deployment_uuid):
+    """Show one deployment by its deployment_uuid — the way to poll a deploy to completion.
+
+    ``status`` goes in_progress -> finished | failed | cancelled-by-user.
+    """
+    pp(api("GET", f"/deployments/{deployment_uuid}"))
 
 
 def cmd_logs(uuid, lines=50):
@@ -266,13 +329,17 @@ def main():
     elif cmd == "deploy" and len(args) >= 2:
         force = "--force" in args
         cmd_deploy(args[1], force=force)
-    elif cmd == "deployments" and len(args) >= 2:
+    elif cmd == "deployments":
         limit = 5
         if "--limit" in args:
             idx = args.index("--limit")
             if idx + 1 < len(args):
                 limit = int(args[idx + 1])
-        cmd_deployments(args[1], limit=limit)
+        # The uuid is optional: with none, list everything in flight across the instance.
+        target = args[1] if len(args) >= 2 and not args[1].startswith("--") else None
+        cmd_deployments(target, limit=limit)
+    elif cmd == "deployment" and len(args) >= 2:
+        cmd_deployment(args[1])
     elif cmd == "logs" and len(args) >= 2:
         lines = 50
         if "--lines" in args:

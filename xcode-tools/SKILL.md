@@ -1,7 +1,7 @@
 ---
 name: xcode-tools
 description: Xcode build-system CLI recipes - xcodebuild build/test/archive with destinations and test plans, parsing .xcresult bundles (failures, attachments, coverage), code-signing triage (certificates, provisioning profiles, CI keychains), crash symbolication (dSYM/atos/CrashSymbolicator), physical-device control with devicectl, and DerivedData/SPM cache hygiene. Use when the user says "build/test this iOS app from the CLI", "parse the xcresult", "code signing error/no signing certificate", "symbolicate this crash", "run on my iPhone", or "clean DerivedData/SPM cache".
-argument-hint: "[build|test|xcresult|signing|crash|device] [action]"
+argument-hint: [build|test|xcresult|signing|crash|device] [action]
 ---
 
 # Xcode Tools Skill

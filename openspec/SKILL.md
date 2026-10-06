@@ -1,7 +1,7 @@
 ---
 name: openspec
 description: Spec-driven development with OpenSpec. Discuss a feature then spec it before coding (proposal/specs/design/tasks); implement against the artifacts, validate, and archive so living specs stay in the repo. Use for medium/large features or any auth/billing/security/data-model/full-stack change. To onboard an existing (brownfield) codebase onto OpenSpec, use the openspec-baseline skill instead. Triggers — "use openspec", "spec this out", "propose a change", "discuss the project", "/opsx", "openspec".
-argument-hint: "[discuss|propose|apply|baseline|status|validate|archive|init] [change-name]"
+argument-hint: [discuss|propose|apply|baseline|status|validate|archive|init] [change-name]
 ---
 
 # OpenSpec — Spec-Driven Development

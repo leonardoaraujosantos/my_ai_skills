@@ -1,7 +1,7 @@
 ---
 name: android-tools
 description: Native Android development CLI recipes - emulator/AVD management (headless boot, snapshots, network/battery/GPS via console), adb essentials (install flags, deep links, permission grants, screenshots/screenrecord with clean status bar, logcat filtering, run-as file access), crash/ANR/tombstone debugging, and Gradle build triage (dependency conflicts, manifest merger, R8, AGP 9). Use when the user says "run this on the Android emulator", "adb screenshot/logcat", "test this deep link", "parse this ANR/bugreport", "gradle build fails", "duplicate class", or "R8 crash in release".
-argument-hint: "[emulator|adb|debug|gradle] [action]"
+argument-hint: [emulator|adb|debug|gradle] [action]
 ---
 
 # Android Tools Skill

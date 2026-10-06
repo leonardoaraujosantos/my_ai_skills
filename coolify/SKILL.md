@@ -1,7 +1,7 @@
 ---
 name: coolify
 description: Manage Coolify deployments, applications, environment variables, and services via the Coolify API. Use when the user wants to deploy, check deployment status, manage env vars, view logs, or troubleshoot Coolify applications.
-argument-hint: "[command] [args...]"
+argument-hint: [command] [args...]
 ---
 
 # Coolify Management Skill
@@ -59,8 +59,10 @@ user first**:
 - `app-env-set` — changes runtime configuration (can break a running app)
 - `app-env-delete` — removes an env var (may take the app down)
 
-Read-only commands (`apps`, `app`, `app-envs`, `deployments`, `logs`,
+Read-only commands (`apps`, `app`, `app-envs`, `deployments`, `deployment`, `logs`,
 `services`, `resources`, `servers`, `teams`) are always safe to run.
+
+Note that `deploy` is **never** safe to run speculatively; it always queues a deployment (see below).
 
 ---
 
@@ -99,17 +101,32 @@ coolify_cli app-env-delete <app-uuid> <env-uuid>
 
 ### Trigger Deployment
 ```bash
-coolify_cli deploy <app-uuid>
-coolify_cli deploy <app-uuid> --force
+coolify_cli deploy <app-uuid>            # prints the deployment_uuid to poll
+coolify_cli deploy <app-uuid> --force    # rebuild without cache
 ```
-Use `--force` to rebuild without cache.
 
-### List Recent Deployments
+The CLI sends `POST /deploy?uuid=…&force=…`, which current Coolify requires (it answers a GET with
+405 "This endpoint has changed to a POST request"). Older releases (4.0.0-beta.469) only accept
+`GET /deploy?uuid=…`, so the CLI retries with GET **only** when the POST gets a 405 (nothing was
+queued, so the retry can't double-deploy). On those older servers the GET mutates: fetching that
+URL starts a deployment, so never probe or curl it to "see if it works".
+
+### Poll a Deployment
 ```bash
-coolify_cli deployments <app-uuid>
-coolify_cli deployments <app-uuid> --limit 10
+coolify_cli deployment <deployment_uuid>
 ```
-Returns: status, commit, message, timestamps.
+`status` goes `in_progress` → `finished` | `failed` | `cancelled-by-user`. Use the
+`deployment_uuid` that `deploy` printed, not the application uuid.
+
+### List In-Progress Deployments
+```bash
+coolify_cli deployments                  # everything in flight on the instance
+coolify_cli deployments <app-uuid>       # just this application
+```
+
+**This is not history.** Coolify exposes no per-application deployment history endpoint, so an empty
+result means "nothing is deploying right now" — not "this app has never deployed". To check how the
+last deploy went, keep its `deployment_uuid` and use `deployment`.
 
 ### View Application Logs
 ```bash
@@ -152,18 +169,19 @@ coolify_cli teams
 
 ## Common Workflows
 
-### Check deployment status after merge
+### Deploy and wait for the result
 ```bash
-coolify_cli deployments <app-uuid> --limit 3
+coolify_cli deploy <app-uuid>            # note the deployment_uuid it prints
+coolify_cli deployment <deployment_uuid> # poll until status leaves in_progress
 ```
 
 ### Debug a failed deployment
 ```bash
-# Check recent deployments
-coolify_cli deployments <app-uuid> --limit 5
-# Check app logs
-coolify_cli logs <app-uuid> --lines 100
+coolify_cli deployment <deployment_uuid>   # status, and the build log in `logs`
+coolify_cli logs <app-uuid> --lines 100    # the running container's output
 ```
+A container that builds and then restarts repeatedly will look "finished" here — the deployment
+succeeded and the process is crash-looping. `logs` is where that shows up, not `deployment`.
 
 ### Set a JSON env var (e.g., MCP config)
 ```bash

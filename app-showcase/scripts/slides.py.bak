@@ -22,12 +22,8 @@ Deck spec (JSON):
     {"type":"bullets","kicker":"...","title":"...","bullets":[["Lead","Desc"],...]},       # full-width, no image
     {"type":"table","kicker":"...","title":"...","columns":["A","B","C"],
         "rows":[["r","✓","✕"],...],"highlight_col":1,"symbols":true},
-    {"type":"closing","kicker":"...","title":"Two lines\\nok","subtitle":"...","cta":"...","image":"hero"},
-    {"type":"screen","kicker":"...","title":"...","bullets":[["Lead","Desc"],...],"image":"shot1",
-        "caption":"optional small caption under the shot","img_w":4.8},          # real screenshot, aspect kept
-    {"type":"screens","kicker":"...","title":"...","items":[{"image":"p1","lead":"Step","desc":"..."},...]}  # 2-4 shots in a row
+    {"type":"closing","kicker":"...","title":"Two lines\\nok","subtitle":"...","cta":"...","image":"hero"}
   ]
-  Screenshot images keep their aspect ratio (PNG/JPEG header is read for size).
 }
 Fonts render tall — keep titles short and re-check by exporting to PDF.
 """
@@ -61,25 +57,6 @@ def gws_raw_json(args, json_str, params):
     return json.loads(out[i:]) if i >= 0 else {"raw": out[:300]}
 
 
-def image_size(path):
-    """(w, h) in pixels from the PNG/JPEG header; no PIL needed."""
-    import struct
-    with open(path, "rb") as f:
-        head = f.read(26)
-        if head[:8] == b"\x89PNG\r\n\x1a\n":
-            return struct.unpack(">II", head[16:24])
-        f.seek(0); data = f.read()
-    if data[:2] == b"\xff\xd8":
-        i = 2
-        while i < len(data):
-            if data[i] != 0xFF: i += 1; continue
-            marker = data[i+1]
-            if marker in (0xC0, 0xC1, 0xC2):
-                h, w = struct.unpack(">HH", data[i+5:i+9]); return (w, h)
-            i += 2 + struct.unpack(">H", data[i+2:i+4])[0]
-    return (16, 9)
-
-
 def upload_images(images, base_dir):
     urls = {}
     for key, path in (images or {}).items():
@@ -94,8 +71,7 @@ def upload_images(images, base_dir):
 
 
 class Deck:
-    def __init__(self, spec, urls, sizes=None):
-        self.sizes = sizes or {}
+    def __init__(self, spec, urls):
         self.t = {**DEFAULT_THEME, **spec.get("theme", {})}
         f = spec.get("fonts", {})
         self.HEAD = f.get("head", "Poppins"); self.BODY = f.get("body", "Roboto")
@@ -136,17 +112,6 @@ class Deck:
         self.reqs.append({"createImage":{"objectId":iid,"url":self.urls[key],"elementProperties":{
             "pageObjectId":sid,"size":{"width":{"magnitude":w,"unit":"EMU"},"height":{"magnitude":h,"unit":"EMU"}},
             "transform":{"scaleX":1,"scaleY":1,"translateX":x,"translateY":y,"unit":"EMU"}}}})
-    def fit_image(self, sid, key, x, y, w, h, frame=True, valign="top"):
-        """Place image inside the (x,y,w,h) box keeping its aspect; returns (ix,iy,iw,ih)."""
-        pw, ph = self.sizes.get(key, (16, 9))
-        r = min(w / pw, h / ph); iw, ih = int(pw * r), int(ph * r)
-        ix = x + (w - iw) // 2
-        iy = y if valign == "top" else y + (h - ih) // 2
-        if frame:
-            pad = IN(0.05)
-            self.rect(sid, ix - pad, iy - pad, iw + 2 * pad, ih + 2 * pad, fill="panel")
-        self.image(sid, key, ix, iy, iw, ih)
-        return ix, iy, iw, ih
     def tb(self, sid, x, y, w, h):
         tid = self.oid("t")
         self.reqs.append({"createShape":{"objectId":tid,"shapeType":"TEXT_BOX","elementProperties":{
@@ -299,45 +264,9 @@ class Deck:
             self.style(c,None,None,size=13.5,color="accent",bold=True,font=self.HEAD)
         self.footer(s,idx)
 
-    def s_screen(self, d, idx):
-        s=self.slide()
-        img_w=d.get("img_w",4.8); tx_w=9.55-0.6-img_w-0.35
-        if d.get("kicker"): self.kicker(s,d["kicker"],IN(0.78),IN(0.55),w=IN(tx_w))
-        self.rect(s,IN(0.55),IN(0.9),IN(0.08),IN(1.0),fill="accent")
-        h=self.tb(s,IN(0.78),IN(0.85),IN(tx_w),IN(1.1)); self.text(h,d["title"])
-        self.style(h,None,None,size=d.get("title_size",21),color="white",bold=True,font=self.HEAD); self.para(h,line=112)
-        y=IN(2.15)
-        for lead,desc in d.get("bullets",[]):
-            self.bullet(s,IN(0.6),y,IN(tx_w+0.1),lead,desc); y+=IN(d.get("bullet_gap",0.95))
-        bx=IN(9.55-img_w); by=IN(0.7); bw=IN(img_w); bh=IN(4.25)
-        ix,iy,iw,ih=self.fit_image(s,d["image"],bx,by,bw,bh,valign=d.get("valign","middle"))
-        if d.get("caption"):
-            c=self.tb(s,ix,iy+ih+IN(0.08),iw,IN(0.3)); self.text(c,d["caption"])
-            self.style(c,None,None,size=9,color="muted",italic=True,font=self.BODY); self.para(c,align="CENTER")
-        self.footer(s,idx)
-    def s_screens(self, d, idx):
-        s=self.slide()
-        if d.get("kicker"): self.kicker(s,d["kicker"],IN(0.6),IN(0.45))
-        h=self.tb(s,IN(0.55),IN(0.72),IN(9),IN(0.6)); self.text(h,d["title"])
-        self.style(h,None,None,size=24,color="white",bold=True,font=self.HEAD)
-        self.rect(s,IN(0.6),IN(1.32),IN(1.1),IN(0.05),fill="accent")
-        items=d["items"][:4]; n=len(items); gap=0.3
-        col=(9.0-gap*(n-1))/n; x=0.55
-        top=1.5; img_h=d.get("img_h",2.55)
-        for it in items:
-            ix,iy,iw,ih=self.fit_image(s,it["image"],IN(x),IN(top),IN(col),IN(img_h))
-            t=self.tb(s,IN(x),IN(top+img_h+0.12),IN(col),IN(0.75))
-            body=it["lead"]+"\n"+it["desc"]; self.text(t,body); n1=len(it["lead"])
-            self.style(t,0,n1,size=12.5,color="accent",bold=True,font=self.HEAD)
-            self.style(t,n1+1,len(body),size=10.5,color="muted",font=self.BODY)
-            self.para(t,align="CENTER",line=115)
-            x+=col+gap
-        self.footer(s,idx)
-
     def build(self, slides):
         r={"title":self.s_title,"cards":self.s_cards,"section":self.s_section,
-           "bullets":self.s_bullets,"table":self.s_table,"closing":self.s_closing,
-           "screen":self.s_screen,"screens":self.s_screens}
+           "bullets":self.s_bullets,"table":self.s_table,"closing":self.s_closing}
         for i,d in enumerate(slides,1):
             r[d["type"]](d,i)
         return self.reqs
@@ -356,9 +285,7 @@ def main():
         print("created presentation", pid)
 
     urls = upload_images(spec.get("images", {}), base_dir)
-    sizes = {k: image_size(p if os.path.isabs(p) else os.path.join(base_dir, p))
-             for k, p in spec.get("images", {}).items()}
-    deck = Deck(spec, urls, sizes)
+    deck = Deck(spec, urls)
     reqs = deck.build(spec["slides"])
 
     # delete existing slides so this is idempotent, then create ours

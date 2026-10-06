@@ -9,7 +9,6 @@ description: >
   there. Use when the user wants to set up automatic document-to-Markdown
   conversion, reduce token cost on PDFs/Office docs, or asks to install/manage
   the markitdown read interceptor. One-time install per machine.
-argument-hint: "[install|verify|remove]"
 metadata:
   version: 1.0.0
   category: tooling

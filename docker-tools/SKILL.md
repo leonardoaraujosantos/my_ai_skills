@@ -1,7 +1,7 @@
 ---
 name: docker-tools
 description: Opinionated Docker and Docker Compose debugging and maintenance recipes - container status, unhealthy/restarting container diagnosis, logs, exec/copy, disk cleanup, compose lifecycle, networking, and images. Use when the user asks "why is my container unhealthy/restarting", wants docker logs or disk usage, says "clean up docker", "debug this container", or "compose up/down".
-argument-hint: "[container|compose-service] [action]"
+argument-hint: [container|compose-service] [action]
 ---
 
 # Docker Tools Skill

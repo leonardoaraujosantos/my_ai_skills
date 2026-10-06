@@ -1,7 +1,7 @@
 ---
 name: ipfs
 description: Operate IPFS as a developer — run and drive a Kubo node (add/cat/pin/gc, CIDv1 gotchas, provider records), keep data alive (remote pinning services, Pinning Service API, Filecoin), name and ship sites (IPNS, DNSLink, gateways incl. trustless/verified retrieval), and build apps (Helia, @helia/verified-fetch, Pinata SDK, CID-on-chain patterns). Includes privacy rules for public content-addressed data and the 2025-26 public-gateway wind-down. Use when the user says "IPFS", "CID", "Kubo", "Helia", "pin/pinning", "IPNS", "DNSLink", "ipfs gateway", "content addressing", "Pinata", "Storacha", or "Filecoin storage".
-argument-hint: "[node|pin|name|app] [topic]"
+argument-hint: [node|pin|name|app] [topic]
 ---
 
 # IPFS — Developer Operations

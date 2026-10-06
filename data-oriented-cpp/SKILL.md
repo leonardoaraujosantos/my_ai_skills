@@ -1,7 +1,7 @@
 ---
 name: data-oriented-cpp
 description: Design and review performance-critical C++ that processes large homogeneous datasets - geometry, entities, particles, simulation state, image/array pipelines, ECS-style systems. Encodes patterns proven at scale in Blender's blenlib/nodes/transform/depsgraph - compressed index sets instead of index vectors, virtual arrays with call-site devirtualization, implicit sharing (COW plus a version counter), CSR offset grouping, lock-free parallel writes via ownership partition, lazy threading for unknown-size tasks, normalize-then-operate for N types x M operations, granular invalidate-and-flush dependency tracking, and self-describing serialization that survives schema change. Use when writing or reviewing hot-loop C++ over big arrays, choosing a parallelization strategy, designing an editor or engine subsystem, adding undo/persistence, or whenever a design has N data types multiplied by M operations. Triggers - "hot loop", "millions of elements", "SoA vs AoS", "cache locality", "copy-on-write", "selection mask", "parallel_for", "grain size", "data race on shared vertices", "undo system", "file format versioning", "this switch statement has 20 cases".
-argument-hint: "[design|review|parallelize|persist] [what]"
+argument-hint: [design|review|parallelize|persist] [what]
 ---
 
 # Data-Oriented C++

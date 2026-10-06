@@ -1,7 +1,7 @@
 ---
 name: foundry-tools
 description: Solidity smart-contract development, testing, and security workflows with Foundry (forge, cast, anvil, chisel) plus Slither static analysis. Covers building and testing (unit, fuzz, invariant, fork), gas profiling and snapshots, coverage, chain interaction with cast, local anvil nodes, keystore-based signing, static analysis, and a checks-effects-interactions / reentrancy / access-control review checklist. Deploys and transactions are gated behind explicit approval. Use when the user says "run forge test", "test this contract", "fuzz/invariant test", "gas report", "forge coverage", "slither this", "audit this contract", "cast call/send", "fork mainnet", "deploy this contract", "verify on etherscan", or "why does this revert".
-argument-hint: "[test|deploy|cast|security] [contract or topic]"
+argument-hint: [test|deploy|cast|security] [contract or topic]
 ---
 
 # Foundry Tools — Solidity Development, Testing & Security

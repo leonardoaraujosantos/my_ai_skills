@@ -1,7 +1,7 @@
 ---
 name: sentry
 description: Add and operate Sentry error monitoring, tracing, profiling, logs, and session replay across Python (FastAPI/Django/Flask/Celery), JavaScript/TypeScript (browser, Node, Next.js, Svelte, WASM), Go, iOS/Apple, Android, Unity, and Unreal. Covers SDK install and init, DSN/secret handling, environments and releases, source-map and debug-symbol upload, PII scrubbing, sampling and quota tuning, and a stdlib-only test-event sender for verifying an install. Use when the user says "add Sentry", "instrument this app", "set up error tracking/monitoring", "why aren't my events showing up", "my stack traces are minified/unsymbolicated", "upload source maps/dSYMs/ProGuard mapping", "sentry-wizard", "sentry-cli", "tune traces_sample_rate", or "we're burning our Sentry quota".
-argument-hint: "[python|javascript|go|apple|android|games|operations] [topic]"
+argument-hint: [python|javascript|go|apple|android|games|operations] [topic]
 ---
 
 # Sentry Skill
