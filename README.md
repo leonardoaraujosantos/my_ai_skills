@@ -30,6 +30,7 @@ mindmap
       foundry-tools
       github
       hardhat-tools
+      ignite
       openspec
       openspec-baseline
       release-notes
@@ -1159,6 +1160,51 @@ hardhat-tools/
     ├── hardhat2.md
     ├── deploy.md
     └── security.md
+```
+
+---
+
+## ignite
+
+Cosmos SDK app-chain scaffolding and local development with [Ignite CLI](https://github.com/ignite/cli). Covers pinning a release, which Ignite major scaffolds which Cosmos SDK version (v28 = SDK v0.50, v29 = v0.53, v30 RC = v0.55), and the v30 split where top-level `scaffold`/`chain` now target gno.land and the Cosmos tooling lives under `ignite cosmos`. Documents what each `scaffold` command (chain, module, message, query, list, map, single, type, params) writes, `generate proto-go/openapi/ts-client`, the `chain serve` hot-reload loop, `chain build`/`init`, the full `config.yml` reference, and fixes for Go toolchain, buf/proto, and `app_config.go`/depinject wiring failures. Ignite's dev accounts, mnemonics, faucet, and genesis amounts are treated as local-only; anything that broadcasts to a non-local network or uses real keys needs explicit approval.
+
+### Installation
+
+```bash
+# Pinned release into the current directory (append "!" to move it into /usr/local/bin)
+curl https://get.ignite.com/cli@v29.10.1 | bash
+# Go >= 1.26.7 per the current Ignite docs
+go version
+```
+
+### Usage
+
+```bash
+/ignite scaffold a module with a list type    # commit first, scaffold, review the diff
+/ignite serve this chain on other ports        # config.yml validator app/config overrides
+/ignite config add a genesis account           # dev genesis only, never production
+/ignite debug buf error on chain build         # toolchain, proto, and wiring fixes
+```
+
+### Reference files
+
+| Topic | File |
+|-------|------|
+| Install, Ignite to Cosmos SDK version map, v29 vs v30 commands, upgrading | `references/install-and-versions.md` |
+| Scaffold commands, files each touches, code generation | `references/scaffolding.md` |
+| `chain serve/build/init`, faucet, `config.yml` reference | `references/running-and-config.md` |
+| Tests, common failures, module wiring, outgrowing Ignite | `references/troubleshooting.md` |
+
+### Files
+
+```
+ignite/
+├── SKILL.md
+└── references/
+    ├── install-and-versions.md
+    ├── scaffolding.md
+    ├── running-and-config.md
+    └── troubleshooting.md
 ```
 
 ---
