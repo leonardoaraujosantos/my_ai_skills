@@ -23,6 +23,7 @@ mindmap
       transcribe
       video-tools
     Dev Workflow and Code Quality
+      aminichain
       code-review
       cognitive-complexity
       data-oriented-cpp
@@ -158,6 +159,48 @@ amini-llm/
 ├── SKILL.md
 ├── amini_llm_cli.py
 └── example.env
+```
+
+---
+
+## aminichain
+
+Working in the AminiChain repository: a Cosmos SDK app-chain with an embedded EVM ([cosmos/evm](https://github.com/cosmos/evm)) and native precompiles for oracles, jobs, compute, content, MDI records and hosts, each reachable both as a Cosmos message and as an EVM call at a fixed address. Covers orienting in the repo (its `AGENTS.md` comes first and wins), the Makefile build/test/lint/proto targets, a single-validator localnet on loopback-only ports with `scripts/local-node.sh`, the multi-node docker compose localnet, stopping and resetting both, precompile addresses and ABIs with `cast call` examples, reading module/EVM/fee-market params, and power reduction as a build-time input. Project specifics are read from the repo at runtime rather than copied into the skill. Proto regeneration defers to the `ignite` skill. Anything that broadcasts beyond a local node, uses real keys, or touches production genesis or ceremony files needs explicit approval.
+
+### Installation
+
+No install beyond the repo's own toolchain:
+
+```bash
+go version          # Go with CGO enabled; the repo's go.mod sets the version
+cast --version      # optional, Foundry, for precompile calls
+docker compose version   # optional, for the multi-node localnet
+```
+
+### Usage
+
+```bash
+/aminichain orient                          # read AGENTS.md, versions from go.mod, Makefile targets
+/aminichain localnet                        # make localnet, verify blocks and EVM JSON-RPC
+/aminichain precompiles list pending jobs   # cast call against the local node
+/aminichain params                          # module, EVM and fee-market params on the local node
+```
+
+### Reference files
+
+| Topic | File |
+|-------|------|
+| Single-validator and docker localnets, ports, stop and reset | `references/localnet.md` |
+| Precompile addresses, ABIs, `cast` calls, params, build-time inputs | `references/precompiles-and-params.md` |
+
+### Files
+
+```
+aminichain/
+├── SKILL.md
+└── references/
+    ├── localnet.md
+    └── precompiles-and-params.md
 ```
 
 ---
