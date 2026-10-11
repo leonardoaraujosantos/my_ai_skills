@@ -22,9 +22,11 @@ Commands:
                                   Delete an env var
     deploy <uuid> [--force]       Trigger deployment (prints the deployment_uuid to poll)
     deployments [<uuid>] [--limit N]
-                                  List IN-PROGRESS deployments, optionally for one app.
-                                  Coolify exposes no history endpoint — an empty list means
-                                  nothing is deploying, not that nothing ever has.
+                                  With an app uuid: that app's deployment HISTORY, newest first
+                                  (Coolify >= 4.4, GET /deployments/applications/{uuid}); on older
+                                  servers (404) only IN-PROGRESS deployments exist, so an empty
+                                  list there means nothing is deploying, not that nothing ever has.
+                                  Without a uuid: everything in flight on the instance.
     deployment <deployment_uuid>  Show one deployment: status is in_progress | finished |
                                   failed | cancelled-by-user
     logs <uuid> [--lines N]       Show application logs
@@ -92,7 +94,12 @@ def api(method, path, data=None, *, passthrough=()):
     try:
         with urlopen(req, timeout=30) as resp:
             raw = resp.read().decode()
-            return json.loads(raw) if raw.strip() else {}
+            if not raw.strip():
+                return {}
+            try:
+                return json.loads(raw)
+            except json.JSONDecodeError:
+                return raw.strip()  # e.g. GET /version answers plain text
     except HTTPError as e:
         if e.code in passthrough:
             raise ApiStatus(e.code) from e
@@ -185,16 +192,45 @@ def cmd_deploy(uuid, force=False):
     pp(result)
 
 
+def _deployment_row(d):
+    return {
+        "deployment_uuid": d.get("deployment_uuid"),
+        "application": d.get("application_name"),
+        "status": d.get("status"),
+        "commit": str(d.get("commit") or "")[:8],
+        "message": str(d.get("commit_message") or "")[:60],
+        "created": d.get("created_at"),
+        "finished": d.get("finished_at"),
+    }
+
+
 def cmd_deployments(uuid=None, limit=5):
-    """List deployments that are queued or running, optionally for one application.
+    """List deployments, optionally for one application.
 
-    Coolify has no per-application deployment *history* endpoint — /applications/{uuid}/deployments
-    is a 404. GET /deployments returns only what is in flight, so an empty list means "nothing
-    deploying right now", not "this app has never deployed".
+    With an application uuid, Coolify >= 4.4 has a real *history* endpoint,
+    ``GET /deployments/applications/{uuid}?skip=0&take=N`` → ``{"count", "deployments": [...]}``
+    newest first (verified on 4.4.6, 2026-10-11). Older servers answer 404 there; they only expose
+    what is in flight via ``GET /deployments``, so on those an empty list means "nothing deploying
+    right now", not "this app has never deployed". ``/applications/{uuid}/deployments`` is a 404
+    everywhere.
 
-    ``uuid`` is an application uuid; /deployments keys on the numeric application_id, so it is
-    resolved via /applications/{uuid} first.
+    Without a uuid: everything in flight on the instance. ``/deployments`` keys on the numeric
+    application_id, so for the in-flight filter the app uuid is resolved via /applications/{uuid}.
     """
+    if uuid:
+        try:
+            history = api("GET", f"/deployments/applications/{uuid}?skip=0&take={limit}",
+                          passthrough=(404,))
+        except ApiStatus:
+            history = None
+        if history is not None:
+            items = history.get("deployments", []) if isinstance(history, dict) else history
+            rows = [_deployment_row(d) for d in list(items or [])[:limit] if isinstance(d, dict)]
+            if not rows:
+                print(f"No deployments recorded for application {uuid}.")
+            pp(rows)
+            return
+
     app_id = None
     if uuid:
         app = api("GET", f"/applications/{uuid}")
@@ -207,19 +243,7 @@ def cmd_deployments(uuid=None, limit=5):
     if app_id is not None:
         items = [d for d in items if d.get("application_id") == app_id]
 
-    rows = [
-        {
-            "deployment_uuid": d.get("deployment_uuid"),
-            "application": d.get("application_name"),
-            "status": d.get("status"),
-            "commit": str(d.get("commit") or "")[:8],
-            "message": str(d.get("commit_message") or "")[:60],
-            "created": d.get("created_at"),
-            "finished": d.get("finished_at"),
-        }
-        for d in items[:limit]
-        if isinstance(d, dict)
-    ]
+    rows = [_deployment_row(d) for d in items[:limit] if isinstance(d, dict)]
     if not rows:
         scope = f" for application {uuid}" if uuid else ""
         print(f"No deployment in progress{scope}. (This endpoint does not return history.)")

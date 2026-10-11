@@ -57,6 +57,9 @@ def calls(monkeypatch):
                     "status": "in_progress",
                 },
             ]
+        if path.startswith("/deployments/applications/"):
+            # The default fixture models an OLD server: no history endpoint.
+            raise cc.ApiStatus(404)
         if path.startswith("/deployments/"):
             return {"deployment_uuid": path.rsplit("/", 1)[1], "status": "finished"}
         if path.startswith("/applications/"):
@@ -123,10 +126,44 @@ def test_deploy_surfaces_the_deployment_uuid(calls, capsys):
     assert "deployment_uuid=dep-uuid" in capsys.readouterr().out
 
 
-def test_deployments_filters_to_one_application(calls, capsys):
-    """/deployments keys on the numeric application_id, so the app uuid must be resolved first."""
+def test_deployments_prefers_the_history_endpoint_when_the_server_has_it(monkeypatch, capsys):
+    """Coolify >= 4.4: GET /deployments/applications/{uuid} returns {"count", "deployments"} newest
+    first (seen on 4.4.6). That is real history, so neither /applications/{uuid} nor /deployments
+    must be called."""
+    recorded = []
+
+    def fake_api(method, path, data=None, passthrough=()):
+        recorded.append((method, path))
+        assert path.startswith("/deployments/applications/app-uuid?"), path
+        return {"count": 35, "deployments": [
+            {"deployment_uuid": "new", "status": "finished", "commit": "1291e8c6c3f0",
+             "commit_message": "feat: newest", "created_at": "2026-10-11T17:23:56Z"},
+            {"deployment_uuid": "old", "status": "finished", "commit": "8b2c56fe"},
+        ]}
+
+    monkeypatch.setattr(cc, "api", fake_api)
+    cc.cmd_deployments("app-uuid", limit=3)
+
+    assert recorded == [("GET", "/deployments/applications/app-uuid?skip=0&take=3")]
+    out = capsys.readouterr().out
+    assert out.index("new") < out.index("old"), "history must stay newest first"
+    assert "1291e8c6" in out and "feat: newest" in out
+
+
+def test_deployments_history_empty_is_reported_as_no_history(monkeypatch, capsys):
+    monkeypatch.setattr(cc, "api", lambda m, p, data=None, passthrough=(): {"count": 0, "deployments": []})
+
     cc.cmd_deployments("app-uuid")
 
+    assert "No deployments recorded for application app-uuid" in capsys.readouterr().out
+
+
+def test_deployments_filters_to_one_application(calls, capsys):
+    """Old server (history endpoint 404): /deployments keys on the numeric application_id, so the
+    app uuid must be resolved first and the in-flight list filtered."""
+    cc.cmd_deployments("app-uuid")
+
+    assert ("GET", "/deployments/applications/app-uuid?skip=0&take=5") in calls
     assert ("GET", "/applications/app-uuid") in calls
     assert ("GET", "/deployments") in calls
     out = capsys.readouterr().out
@@ -158,3 +195,19 @@ def test_deployment_reads_a_single_deployment(calls, capsys):
 
     assert calls == [("GET", "/deployments/dep-uuid")]
     assert "finished" in capsys.readouterr().out
+
+
+def test_api_returns_plain_text_bodies_instead_of_crashing(monkeypatch):
+    """GET /version answers a bare string such as 4.4.6, not JSON."""
+    import io
+
+    class _Resp(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    monkeypatch.setattr(cc, "urlopen", lambda req, timeout: _Resp(b"4.4.6\n"))
+    monkeypatch.setattr(cc, "get_config", lambda: ("https://c.example", "t"))
+    assert cc.api("GET", "/version") == "4.4.6"

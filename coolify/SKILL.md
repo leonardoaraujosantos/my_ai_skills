@@ -118,15 +118,20 @@ coolify_cli deployment <deployment_uuid>
 `status` goes `in_progress` → `finished` | `failed` | `cancelled-by-user`. Use the
 `deployment_uuid` that `deploy` printed, not the application uuid.
 
-### List In-Progress Deployments
+### Deployment History / In-Progress Deployments
 ```bash
+coolify_cli deployments <app-uuid>       # this application's history, newest first (Coolify >= 4.4)
+coolify_cli deployments <app-uuid> --limit 10
 coolify_cli deployments                  # everything in flight on the instance
-coolify_cli deployments <app-uuid>       # just this application
 ```
 
-**This is not history.** Coolify exposes no per-application deployment history endpoint, so an empty
-result means "nothing is deploying right now" — not "this app has never deployed". To check how the
-last deploy went, keep its `deployment_uuid` and use `deployment`.
+With an application uuid the CLI asks `GET /deployments/applications/{uuid}?skip=0&take=N`, which
+Coolify 4.4+ answers with the app's deployment **history** (`status`, `commit`, created/finished).
+This is the way to confirm that a merge to `main` was auto-deployed (webhook) before triggering
+anything by hand. Older servers answer 404 there; the CLI then falls back to `GET /deployments`,
+which lists only what is **in flight**, so on those an empty result means "nothing is deploying
+right now", not "this app has never deployed". `/applications/{uuid}/deployments` is a 404 on every
+version. To follow one deploy to completion, use `deployment <deployment_uuid>`.
 
 ### View Application Logs
 ```bash
