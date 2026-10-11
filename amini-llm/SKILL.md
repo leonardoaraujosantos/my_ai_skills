@@ -1,7 +1,7 @@
 ---
 name: amini-llm
 description: Use the AminiLLM gateway - a self-hosted, OpenAI-compatible LiteLLM proxy serving Qwen3 models on-prem (text chat, reasoning, vision/multimodal, OCR, embeddings). Use when the user wants to call the internal LLM, run inference without sending data to a third-party API, embed text locally, OCR a document, or troubleshoot the gateway. Triggers - "amini llm", "our LLM", "internal LLM", "the qwen model", "chat-v1", "vision-v1", "embed-v1", "litellm gateway", "on-prem inference".
-argument-hint: [command] [args...]
+argument-hint: "[command] [args...]"
 ---
 
 # AminiLLM Gateway

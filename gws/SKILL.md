@@ -1,7 +1,7 @@
 ---
 name: gws
 description: Interact with Google Workspace (Gmail, Calendar, Drive, Sheets, Docs, Tasks) using the gws CLI. Use when the user wants to send emails, check calendar, manage files, read/write spreadsheets, or automate workspace tasks.
-argument-hint: [service] [command] [options]
+argument-hint: "[service] [command] [options]"
 ---
 
 # Google Workspace CLI (gws) Skill

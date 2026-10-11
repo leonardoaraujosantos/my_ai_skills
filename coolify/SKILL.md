@@ -1,7 +1,7 @@
 ---
 name: coolify
 description: Manage Coolify deployments, applications, environment variables, and services via the Coolify API. Use when the user wants to deploy, check deployment status, manage env vars, view logs, or troubleshoot Coolify applications.
-argument-hint: [command] [args...]
+argument-hint: "[command] [args...]"
 ---
 
 # Coolify Management Skill

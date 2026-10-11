@@ -1,7 +1,7 @@
 ---
 name: email-triage
 description: Inbox triage workflow over the gws CLI — fetch recent Gmail, classify threads into action/reply/newsletter/FYI buckets, present a triage report, then (with explicit confirmation) draft replies, create Google Tasks, and batch-archive bulk mail. Use when the user says "triage my inbox/email", "summarize my emails", "clean up my inbox", "any important emails?", or "draft replies".
-argument-hint: [--days N] [--dry-run] [--focus sender|topic]
+argument-hint: "[--days N] [--dry-run] [--focus sender|topic]"
 ---
 
 # Email Triage

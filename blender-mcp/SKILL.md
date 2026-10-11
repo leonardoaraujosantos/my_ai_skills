@@ -1,7 +1,7 @@
 ---
 name: blender-mcp
 description: Drive Blender through the official Blender Lab MCP server to model, sculpt (procedurally), build materials/shader-node trees, UV unwrap, rig, skin, animate, add IK controls, and export game-ready FBX to Unity/Unreal. Encodes the hard-won gotchas — the screenshot bug, Blender 5.x action-slot API, FFMPEG removal, main-thread freezes — and a visual verification methodology (render → read → fix) that catches errors code-reading hides. Use when the user says "in Blender", "model/sculpt/rig/animate this", "make a walk/idle/death cycle", "weight paint via MCP", "add IK", "export FBX for Unity/Unreal", or points at a running Blender scene.
-argument-hint: [model|material|rig|animate|ik|export] [what]
+argument-hint: "[model|material|rig|animate|ik|export] [what]"
 ---
 
 # Blender via MCP

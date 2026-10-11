@@ -1,7 +1,7 @@
 ---
 name: mobile-publish
 description: Publish native mobile apps to the App Store and Google Play - versioning discipline, archive/AAB signing, upload paths (App Store Connect API/altool/fastlane pilot, Play Developer API/fastlane supply), TestFlight and Play-track promotion, staged rollouts, store screenshot specs, privacy/data-safety forms, and review-rejection playbooks. Use when the user says "publish/release this app", "upload to TestFlight/App Store/Play Store", "promote to production", "staged rollout", "why was my app rejected", "store screenshots specs", or "bump the version/build number".
-argument-hint: [ios|android] [step]
+argument-hint: "[ios|android] [step]"
 ---
 
 # Mobile Publish Skill

@@ -15,6 +15,7 @@ Complete table of every skill in this repository. Each skill name links to its d
 | [cognitive-complexity](../README.md#cognitive-complexity) | Measure & rank Cognitive Complexity to target refactors | `complexipy`, `gocognit`, `eslint-plugin-sonarjs`, `clang-tidy`, `solhint`, `scc` |
 | [convert-to-md](../README.md#convert-to-md) | Convert PDF/PPTX to Markdown | `pymupdf`, `python-pptx` |
 | [coolify](../README.md#coolify) | Manage Coolify deployments & env vars via API | None |
+| [cosmos-chain](../README.md#cosmos-chain) | Any Cosmos SDK / Cosmos EVM chain: build/test, single-validator localnet, standard + custom precompile calls with cast, params; non-local broadcast gated | Go (CGO), `jq`; optional Foundry `cast`, Docker |
 | [csv-tools](../README.md#csv-tools) | CSV manipulation & conversion | None |
 | [data-oriented-cpp](../README.md#data-oriented-cpp) | Design & review hot-loop C++ over large arrays: masks, virtual arrays, COW, parallelism | None |
 | [datasheet](../README.md#datasheet) | Digest component datasheets into structured part cards; compare parts | None |

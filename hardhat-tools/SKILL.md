@@ -1,7 +1,7 @@
 ---
 name: hardhat-tools
 description: Solidity smart-contract development, testing, and deployment with Hardhat (JS/TS toolchain). Covers both Hardhat 3 (ESM, TypeScript config, node:test + Mocha + Solidity tests, viem/ethers, network manager, built-in keystore, Ignition) and Hardhat 2 (CommonJS config, Mocha/Chai/ethers, solidity-coverage, gas reporter). Includes compiling, testing, mainnet forking, coverage and gas reporting, Ignition deployment modules, Etherscan verification, Slither on Hardhat projects, and Hardhat<->Foundry interop. Deploys and transactions are gated behind explicit approval. Use when the user says "hardhat test", "npx hardhat", "hardhat compile", "hardhat coverage", "deploy with ignition", "hardhat deploy script", "fork mainnet in hardhat", "verify on etherscan", "hardhat config", "migrate hardhat 2 to 3", or has a hardhat.config.js/ts project. For Foundry (forge/cast/anvil) use the foundry-tools skill instead.
-argument-hint: [test|deploy|config|security] [contract or topic]
+argument-hint: "[test|deploy|config|security] [contract or topic]"
 ---
 
 # Hardhat Tools — Solidity Development, Testing & Deployment
